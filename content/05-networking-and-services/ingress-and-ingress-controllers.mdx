@@ -1,0 +1,168 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Ingress and Ingress controllers"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "What Ingress is - HTTP/HTTPS routing rules for external traffic",
+    "Host-based and path-based routing rules",
+    "TLS termination at the Ingress level",
+    "Ingress controllers (NGINX, Traefik) and the Gateway API as the future",
+  ]}
+>
+
+## The problem Ingress solves
+
+Using a `LoadBalancer` Service for every HTTP application means each one gets
+its own cloud load balancer. At scale, this is expensive and hard to manage.
+
+**Ingress** consolidates HTTP/HTTPS routing into a single entry point. One
+load balancer handles many services, routing traffic based on hostnames and
+URL paths.
+
+| Approach | Load balancers needed for 10 apps |
+|----------|----------------------------------|
+| 10 `LoadBalancer` Services | 10 |
+| 1 Ingress | 1 |
+
+
+## Ingress resource
+
+An `Ingress` resource defines **routing rules** - which hostname and path
+should send traffic to which Service.
+
+<TerminalBlock label="ingress.yaml">
+{`apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+spec:
+  rules:
+    - host: app.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-api
+                port:
+                  number: 80
+    - host: admin.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-panel
+                port:
+                  number: 80`}
+</TerminalBlock>
+
+### Routing types
+
+| Routing | How it works | Example |
+|---------|-------------|---------|
+| **Host-based** | Routes by hostname in the HTTP `Host` header | `app.example.com` vs `admin.example.com` |
+| **Path-based** | Routes by URL path | `/api` vs `/docs` |
+| **Combined** | Both host and path | `app.example.com/api` |
+
+### Path types
+
+| `pathType` | Behavior |
+|------------|----------|
+| `Prefix` | Matches the URL path prefix (e.g. `/api` matches `/api`, `/api/v1`, `/api/users`) |
+| `Exact` | Matches the exact path only (e.g. `/api` matches only `/api`) |
+| `ImplementationSpecific` | Behavior depends on the Ingress controller |
+
+
+## TLS termination
+
+Ingress can terminate TLS (HTTPS) so that backend Services receive plain
+HTTP. You store the certificate in a Kubernetes `Secret` and reference it
+in the Ingress spec:
+
+<TerminalBlock label="ingress-tls.yaml">
+{`apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+spec:
+  tls:
+    - hosts:
+        - app.example.com
+      secretName: app-tls-cert
+  rules:
+    - host: app.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80`}
+</TerminalBlock>
+
+The Ingress controller handles the TLS handshake and forwards decrypted
+traffic to the backend. This is called **TLS termination** (or SSL
+offloading).
+
+
+## Ingress controllers
+
+An `Ingress` resource on its own does nothing. You need an **Ingress
+controller** - a running component that watches for Ingress resources and
+configures the actual proxy/load balancer.
+
+Kubernetes does **not** include a default Ingress controller. You must
+install one.
+
+| Controller | Notes |
+|-----------|-------|
+| `ingress-nginx` | Most widely used, maintained by the Kubernetes community |
+| `Traefik` | Auto-discovers services, built-in Let's Encrypt support |
+| `HAProxy Ingress` | High-performance, TCP/HTTP support |
+| `AWS ALB Ingress Controller` | Provisions AWS Application Load Balancers |
+
+The controller typically runs as a Deployment in the cluster with a
+`LoadBalancer` Service in front of it. All Ingress traffic flows through
+this single entry point.
+
+<TerminalBlock command="kubectl get pods -n ingress-nginx">
+{`NAME                                       READY   STATUS    AGE
+ingress-nginx-controller-5d8b6f9bc-x7k2m   1/1     Running   5d`}
+</TerminalBlock>
+
+
+## Gateway API - the future of Ingress
+
+The `Ingress` resource has known limitations: it's HTTP-only, relies on
+annotations for advanced features (which vary by controller), and has a
+flat permission model.
+
+The **Gateway API** is the official successor, designed to address these
+shortcomings:
+
+| Feature | Ingress | Gateway API |
+|---------|---------|-------------|
+| Protocols | HTTP/HTTPS only | HTTP, HTTPS, TCP, UDP, gRPC |
+| Role separation | Single resource | `GatewayClass` → `Gateway` → `HTTPRoute` (separate cluster-admin and app-dev concerns) |
+| Advanced routing | Via controller-specific annotations | Built-in (header matching, traffic splitting, mirroring) |
+| Status | Stable, widely adopted | Graduating - increasingly adopted |
+
+For the KCNA, know that Gateway API exists, it's multi-protocol, it provides
+better role separation, and it's the direction Kubernetes networking is
+heading. You don't need to memorize Gateway API manifests.
+
+</LessonFrame>

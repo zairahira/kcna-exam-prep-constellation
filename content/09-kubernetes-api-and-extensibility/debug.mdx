@@ -1,0 +1,60 @@
+import DebugPuzzle from "@/components/puzzle/DebugPuzzle";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-warning uppercase tracking-wide mb-1">debug challenge</p>
+  <h1 className="text-2xl font-bold">The Kubernetes API and Extensibility</h1>
+  <p className="text-fg-subtle text-sm mt-2">3 challenges covering manifests, CRDs, and the declarative model.</p>
+</header>
+
+<DebugPuzzle id="m09-d1" syllabusIds={["K8S-F-08"]}
+  prompt={<p>A manifest won't apply. What's structurally wrong?</p>}
+  artifact={
+    <TerminalBlock label="deployment.yaml">
+      {"apiVersion: apps/v1\n"}
+      {"type: Deployment\n"}
+      {"metadata:\n"}
+      {"  name: api\n"}
+      {"spec:\n"}
+      {"  replicas: 3\n"}
+    </TerminalBlock>
+  }
+  choices={[
+    { id: "a", label: "The field should be 'kind: Deployment', not 'type: Deployment'. 'type' is not a top-level Kubernetes object field." },
+    { id: "b", label: "apiVersion should be v1, not apps/v1." },
+    { id: "c", label: "replicas: 3 is too high." },
+    { id: "d", label: "Deployments require a status: field." },
+  ]}
+  correctId="a"
+  explanation={<p>Every Kubernetes object has <code>apiVersion</code>, <code>kind</code>, <code>metadata</code>, <code>spec</code>. <code>type</code> is not a top-level field - it only appears inside certain specs (e.g. <code>Service.spec.type</code>). <code>apps/v1</code> is correct for Deployments. <code>status</code> is written by the control plane, never by you.</p>}
+/>
+
+<DebugPuzzle id="m09-d2" syllabusIds={["K8S-F-08"]}
+  prompt={<p>You scale a Deployment from 3 to 5 replicas via <code>kubectl scale</code>. Which field did the control plane update to reflect the 5 running Pods?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "spec.replicas" },
+    { id: "b", label: "status.replicas (and related status fields like readyReplicas)" },
+    { id: "c", label: "metadata.annotations" },
+    { id: "d", label: "spec.template.spec.replicas" },
+  ]}
+  correctId="b"
+  explanation={<p><code>spec</code> is what you want (you set replicas=5 there). <code>status</code> is what Kubernetes observes - <code>status.replicas</code>, <code>status.readyReplicas</code>, <code>status.availableReplicas</code>. The reconcile loop drives status toward spec.</p>}
+/>
+
+<DebugPuzzle id="m09-d3" syllabusIds={["K8S-F-08"]}
+  prompt={<p>A team installs a CRD for <code>Certificate</code> (from cert-manager). They can apply Certificate manifests successfully. But no actual TLS certificates are issued. Why?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "A CRD only adds the API type. You also need the corresponding controller (cert-manager itself) running to reconcile Certificate objects and issue certs. The CRD without the controller is just metadata." },
+    { id: "b", label: "CRDs can't be used for TLS." },
+    { id: "c", label: "The namespace is wrong." },
+    { id: "d", label: "CRDs require manual status updates." },
+  ]}
+  correctId="a"
+  explanation={<p>A <strong>CRD</strong> defines a new kind of object you can create and kubectl can work with. A <strong>controller</strong> is what makes those objects actually <em>do</em> anything - watch, reconcile, update status. CRD + controller = <strong>operator</strong>. Without the controller, the Certificate objects just sit there.</p>}
+/>
+
+</div>

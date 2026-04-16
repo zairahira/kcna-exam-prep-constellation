@@ -1,0 +1,48 @@
+import Remember from "@/components/Remember";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-fg-subtle uppercase tracking-wide mb-1">review</p>
+  <h1 className="text-2xl font-bold">Cloud Native Application Delivery</h1>
+  <p className="text-fg-subtle text-sm mt-2">Key facts from all lessons in this module.</p>
+</header>
+
+<Remember
+  points={[
+    <><strong>Continuous Integration</strong>: build + test on every commit.</>,
+    <><strong>Continuous Delivery</strong>: every passing build is deploy-ready; prod deploy is a manual gate.</>,
+    <><strong>Continuous Deployment</strong>: every passing build goes to prod automatically.</>,
+    <>Typical pipeline: build → test → security scan → image build → push → deploy staging → deploy prod.</>,
+    <>CNCF tools: <strong>Tekton</strong> (pipelines as K8s CRDs), <strong>Argo Workflows</strong> (general workflows). Non-CNCF: Jenkins, GitHub Actions, GitLab CI, CircleCI.</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <><strong>GitOps</strong>: Git is the single source of truth for desired state. A controller in the cluster continuously reconciles cluster state to match Git.</>,
+    <>Four principles (OpenGitOps): <strong>declarative</strong>, <strong>versioned/immutable</strong>, <strong>pulled automatically</strong>, <strong>continuously reconciled</strong>.</>,
+    <><strong>Pull model</strong> (GitOps): controller in cluster pulls from Git. No inbound cluster credentials. <strong>Push model</strong>: CI pushes with <code>kubectl apply</code>.</>,
+    <>Benefits: audit trail, rollback = git revert, drift detection, disaster recovery from Git.</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <><strong>Argo CD</strong> (CNCF Graduated): UI-driven, Application-centric. One CRD (<code>Application</code>) with source + destination. Visual sync/health trees.</>,
+    <><strong>Flux</strong> (CNCF Graduated): toolkit-style. Multiple CRDs: <code>GitRepository</code>, <code>Kustomization</code>, <code>HelmRelease</code>. CLI-first.</>,
+    <>Both support Helm and Kustomize natively.</>,
+    <>Pick Argo CD for visibility/self-service; pick Flux for CRD composition and CLI workflows.</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <><strong>Helm</strong> (CNCF Graduated): package manager for K8s. Charts + values + releases.</>,
+    <>Helm commands: <code>helm install</code>, <code>helm upgrade</code>, <code>helm rollback</code>, <code>helm uninstall</code>.</>,
+    <><strong>Kustomize</strong>: overlay system. Base + overlays + patches. No templates - plain YAML. Built into kubectl via <code>-k</code>.</>,
+    <>Helm&apos;s strength is packaging + ecosystem; Kustomize&apos;s strength is simplicity for environment-variant cases. Use together: Helm for upstream charts, Kustomize for your own services.</>,
+  ]}
+/>
+
+</div>

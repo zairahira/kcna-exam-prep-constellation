@@ -1,0 +1,153 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Worker node components"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "The three components that run on every worker node: kubelet, kube-proxy, container runtime",
+    "What the kubelet does and how it interacts with the API server",
+    "How kube-proxy manages network rules for Services",
+    "The role of the container runtime and the CRI interface",
+    "How nodes register with the control plane",
+  ]}
+>
+
+## Worker node overview
+
+**Worker nodes** are the machines that run your application containers. Each
+node runs three components:
+
+1. **kubelet** - the node agent
+2. **kube-proxy** - the network proxy
+3. **container runtime** - the software that actually runs containers
+
+The control plane tells nodes *what* to run. The node components handle the
+*how*.
+
+
+## kubelet
+
+The **kubelet** is an agent that runs on every node. It is responsible for
+making sure the containers described in a Pod specification are running and
+healthy.
+
+How it works:
+
+1. The kubelet **watches** the API server for Pods assigned to its node
+2. When a Pod is assigned, the kubelet instructs the **container runtime** to
+   pull the image and start the container(s)
+3. The kubelet continuously **monitors** container health via liveness and
+   readiness probes
+4. It **reports** node status and Pod status back to the API server
+
+Key facts:
+
+- The kubelet does **not** run as a container - it runs as a system process
+  (typically a `systemd` service) directly on the node
+- It communicates with the container runtime through the **Container Runtime
+  Interface (CRI)** - a gRPC API that allows kubelet to work with any
+  CRI-compatible runtime
+- It manages **Pod lifecycle**: creating, starting, stopping, and deleting
+  containers as instructed by the control plane
+- It also manages **volumes**, mounting them into containers as specified in
+  Pod definitions
+
+<TerminalBlock command="systemctl status kubelet">
+{`● kubelet.service - kubelet: The Kubernetes Node Agent
+     Active: active (running) since Mon 2025-01-06 08:12:33 UTC
+     Main PID: 1234 (kubelet)
+      Tasks: 15 (limit: 4096)
+     Memory: 42.0M`}
+</TerminalBlock>
+
+
+## kube-proxy
+
+**kube-proxy** is a network component that runs on every node. It maintains
+network rules that allow communication to Pods from inside and outside the
+cluster.
+
+When you create a **Service** in Kubernetes, `kube-proxy` makes sure traffic
+sent to that Service's virtual IP (ClusterIP) reaches the right Pods.
+
+How it works:
+
+- `kube-proxy` watches the API server for Service and Endpoint changes
+- It programs network rules on the node to forward traffic to the correct Pod
+  backends
+- It operates in one of several modes:
+
+| Mode | How it routes | Notes |
+|------|--------------|-------|
+| `iptables` (default) | Writes `iptables` rules | Most common, good performance |
+| `ipvs` | Uses Linux IPVS (IP Virtual Server) | Better performance at scale, supports more load balancing algorithms |
+| `nftables` | Uses `nftables` rules | Newer alternative to iptables mode |
+
+`kube-proxy` does **not** proxy traffic itself in the default `iptables` mode -
+it configures the kernel's networking stack to do the forwarding. Traffic goes
+directly from client to Pod without passing through a userspace process.
+
+
+## Container runtime
+
+The **container runtime** is the software responsible for running containers.
+Kubernetes does not include a built-in runtime - it relies on an external one
+installed on each node.
+
+Kubernetes communicates with the runtime through the **Container Runtime
+Interface (CRI)**. Any CRI-compatible runtime works. The two main options:
+
+| Runtime | Details |
+|---------|---------|
+| `containerd` | Most widely used. Default in EKS, GKE, AKS. CNCF Graduated. |
+| `CRI-O` | Built specifically for Kubernetes. Default in OpenShift. CNCF Graduated. |
+
+Under the hood, both `containerd` and `CRI-O` delegate to a **low-level
+runtime** (typically `runc`) that creates the actual Linux containers using
+namespaces and cgroups.
+
+The relationship:
+
+```
+kubelet → (CRI) → containerd → runc → Linux container
+```
+
+Since Kubernetes v1.24, **dockershim** has been removed. Docker-the-runtime is
+no longer supported directly. Docker images still work because they are
+OCI-compliant - `containerd` runs them without issues.
+
+
+## How nodes register
+
+When a node starts, its `kubelet` automatically registers the node with the
+control plane:
+
+1. The kubelet starts and reads its configuration (API server address,
+   authentication credentials)
+2. It sends a **Node registration request** to the API server
+3. The API server creates a `Node` object in `etcd`
+4. The scheduler can now assign Pods to this node
+5. The kubelet begins sending **heartbeats** (via `NodeStatus` updates and
+   `Lease` objects) to indicate the node is alive
+
+If heartbeats stop, the **node controller** (running in `kube-controller-manager`)
+marks the node as `NotReady` and eventually evicts its Pods.
+
+<TerminalBlock command="kubectl get nodes">
+{`NAME       STATUS   ROLES           AGE   VERSION
+node-01    Ready    <none>          42d   v1.30.2
+node-02    Ready    <none>          42d   v1.30.2
+node-03    Ready    <none>          42d   v1.30.2`}
+</TerminalBlock>
+
+
+## Summary table
+
+| Component | Runs as | Role |
+|-----------|---------|------|
+| `kubelet` | System process (`systemd`) | Manages Pod lifecycle on the node, reports status |
+| `kube-proxy` | DaemonSet or system process | Maintains network rules for Service routing |
+| Container runtime (`containerd` / `CRI-O`) | System process | Pulls images, creates and runs containers via CRI |
+
+</LessonFrame>

@@ -1,0 +1,114 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Logging in Kubernetes"
+  domain="Cloud Native Observability · 8%"
+  mustLearn={[
+    "How container logs work in Kubernetes (stdout/stderr → kubelet → disk)",
+    "What kubectl logs actually reads",
+    "Why centralised log aggregation matters",
+    "Common aggregation patterns: sidecar, node-level DaemonSet",
+    "Key tools: Fluentd, Fluent Bit, Loki, the EFK stack",
+    "Why structured logs beat unstructured",
+  ]}
+>
+
+## How container logs flow
+
+The Twelve-Factor App says apps should write logs to `stdout`/`stderr` -
+not log files inside the container. Kubernetes is built around this
+assumption.
+
+The flow:
+
+1. Container writes to stdout/stderr.
+2. The container runtime captures those streams into log files on the node
+   (typically under `/var/log/containers/`).
+3. `kubectl logs` asks kubelet, which reads those files and returns them.
+4. A log collector (optional but essential in production) reads the same
+   files and ships them to a centralized store.
+
+
+## `kubectl logs`
+
+<TerminalBlock>
+{`# Current container logs\nkubectl logs <pod>\n\n# Specific container in a multi-container Pod\nkubectl logs <pod> -c <container>\n\n# Previous terminated instance (for crash loops)\nkubectl logs <pod> --previous\n\n# Stream (follow)\nkubectl logs -f <pod>\n\n# Across all Pods matching a label\nkubectl logs -l app=analytics-ingest --tail=100`}
+</TerminalBlock>
+
+Logs shown by `kubectl logs` are local to the node. When a Pod is deleted,
+its local log files are eventually garbage-collected. If you want to keep
+logs long-term, you need centralised aggregation.
+
+
+## Why centralise
+
+Without centralisation:
+
+- Logs vanish when Pods are rescheduled or nodes are replaced.
+- You can&apos;t search across services.
+- `kubectl logs` becomes impractical across hundreds of Pods.
+
+With centralisation:
+
+- Logs persist beyond the Pod.
+- Structured querying across services, namespaces, time ranges.
+- Enables alerting on log patterns and long-term compliance retention.
+
+
+## Aggregation patterns
+
+### Node-level DaemonSet (most common)
+
+A log collector (Fluentd, Fluent Bit, Vector) runs as a **DaemonSet** -
+one Pod per node. It reads the node&apos;s log files and ships to a
+backend.
+
+Pros: one collector per node, no per-app changes.
+Cons: relies on stdout/stderr convention.
+
+### Sidecar container
+
+A helper container in each Pod reads app logs (including from files
+inside the container) and ships them. Use this when the app legitimately
+can&apos;t use stdout (legacy apps, logs to specific files).
+
+Pros: flexible, per-Pod isolation.
+Cons: resource overhead (one sidecar per Pod).
+
+### Application-direct
+
+The app itself sends logs to the backend. Possible but couples the app
+to a specific backend - generally discouraged.
+
+
+## Common tools
+
+| Tool | Role |
+|------|------|
+| **Fluentd** | CNCF Graduated. Full-featured log collector. Ruby-based; more resource use. |
+| **Fluent Bit** | CNCF Graduated. Lightweight sibling of Fluentd. C-based; widely used on nodes. |
+| **Vector** | Modern collector. Not CNCF but popular. |
+| **Loki** | Grafana&apos;s log store. Queried with LogQL (PromQL-like). |
+| **Elasticsearch** | Classic log search backend (EFK stack: Elasticsearch + Fluentd + Kibana). |
+| **OpenSearch** | Open-source fork of Elasticsearch. |
+
+
+## Structured logging
+
+Unstructured logs (`[2026-04-15 12:34] request took 200ms for /api/v1/x`)
+are hard to search and aggregate reliably. Structured logs output JSON:
+
+<TerminalBlock>
+{`{"ts":"2026-04-15T12:34:00Z","level":"info","msg":"request","path":"/api/v1/x","duration_ms":200}`}
+</TerminalBlock>
+
+Benefits:
+
+- Machine-parseable by any aggregator.
+- Filter/search by specific fields (`level=error`, `path=/api/*`).
+- Dashboards and alerts on exact attributes.
+
+Emit structured logs from day one. Retrofitting is painful.
+
+</LessonFrame>

@@ -1,0 +1,87 @@
+import LessonFrame from "@/components/LessonFrame";
+
+<LessonFrame
+  lessonTitle="What is cloud native?"
+  domain="Cloud Native Architecture · 22%"
+  mustLearn={[
+    "The CNCF definition of cloud native and what it means in practice",
+    "The four pillars: containers, microservices, CI/CD, declarative APIs",
+    "Why organisations adopt cloud native and what problems it solves",
+    "What the Cloud Native Computing Foundation (CNCF) is and its role in the ecosystem",
+  ]}
+>
+
+## What does "cloud native" mean?
+
+The **Cloud Native Computing Foundation (CNCF)** defines cloud native as:
+
+> Technologies that empower organizations to build and run scalable
+> applications in modern, dynamic environments such as public, private,
+> and hybrid clouds. Containers, service meshes, microservices, immutable
+> infrastructure, and declarative APIs exemplify this approach.
+
+In plainer terms, cloud native is a way of building and running software that
+takes full advantage of cloud computing. Instead of treating the cloud like
+a data center you rent, cloud native designs **assume** the cloud
+environment: elastic scaling, on-demand resources, distributed systems, and
+frequent failures that the system handles gracefully.
+
+
+## The four pillars
+
+Cloud native generally rests on four ideas working together:
+
+### 1. Containers
+
+Applications are packaged as **containers** - lightweight, portable units
+that include the app and all its dependencies. Containers start fast, run
+identically across environments, and isolate workloads from each other.
+
+### 2. Microservices
+
+Instead of one large application (a monolith), the system is decomposed into
+**small, independently deployable services**. Each service owns one piece of
+business logic and communicates over the network.
+
+### 3. CI/CD (Continuous Integration / Continuous Delivery)
+
+Code changes are automatically tested, built, and deployed through
+**pipelines**. This shortens the feedback loop from "I wrote code" to "it's
+running in production" - from weeks to minutes.
+
+### 4. Declarative APIs
+
+You describe **what** you want (e.g. "3 replicas of this container") and
+the platform figures out **how** to make it happen. Kubernetes is the prime
+example: you write a manifest declaring desired state, and controllers
+reconcile reality to match.
+
+
+## Why go cloud native?
+
+| Problem | Cloud native answer |
+|---------|-------------------|
+| "Deploying takes a week" | CI/CD pipelines automate build → test → deploy |
+| "One part breaks, everything breaks" | Microservices isolate failures to one service |
+| "Works on my machine, breaks in prod" | Containers guarantee identical environments |
+| "We can't handle traffic spikes" | Elastic scaling adds/removes resources on demand |
+| "Manual config keeps drifting" | Declarative APIs + GitOps keep config in sync |
+
+
+## The CNCF
+
+The **Cloud Native Computing Foundation** is a vendor-neutral home for
+open-source cloud native projects. It sits under the Linux Foundation.
+
+Key things to know for the exam:
+
+- The CNCF **does not build** software - it hosts, governs, and promotes
+  projects built by the community.
+- Projects move through three **maturity levels**: `Sandbox` → `Incubating`
+  → `Graduated`. Graduated projects (like Kubernetes, Prometheus, Envoy) are
+  considered production-ready and widely adopted.
+- The **CNCF Landscape** (`landscape.cncf.io`) is a map of the entire cloud
+  native ecosystem - hundreds of projects organised by category.
+- The **CNCF Trail Map** is a suggested learning path through the landscape.
+
+</LessonFrame>

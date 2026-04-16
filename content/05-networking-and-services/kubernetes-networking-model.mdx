@@ -1,0 +1,126 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Kubernetes networking model"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "Every Pod gets its own IP address - no NAT between Pods",
+    "The flat network model and its three traffic flows",
+    "What CNI plugins do and the major implementations",
+    "Pod-to-Pod, Pod-to-Service, and external-to-Service communication",
+  ]}
+>
+
+## The fundamental rule
+
+Kubernetes imposes one core networking requirement:
+
+**Every Pod gets its own unique IP address, and any Pod can reach any other Pod
+using that IP - without NAT.**
+
+This is called the **flat network model**. From a Pod's perspective, it lives
+on a single, flat network where every other Pod is directly routable. No port
+mapping, no address translation, no special configuration.
+
+This design decision simplifies application code enormously. Services don't
+need to know whether they're talking to a Pod on the same node or a different
+one - the networking layer handles it transparently.
+
+
+## Three traffic flows
+
+All Kubernetes networking fits into three categories:
+
+| Flow | Description |
+|------|-------------|
+| **Pod-to-Pod** | Direct communication between Pods using their IP addresses. Works across nodes without NAT. |
+| **Pod-to-Service** | Pods reach other Pods through a stable Service abstraction (covered in the next lesson). The Service provides a virtual IP that load-balances to backend Pods. |
+| **External-to-Service** | Traffic from outside the cluster reaches internal Services via `NodePort`, `LoadBalancer`, or `Ingress`. |
+
+Kubernetes does not implement networking itself. It defines the model and
+delegates the implementation to **CNI plugins**.
+
+
+## CNI plugins
+
+The **Container Network Interface (CNI)** is a specification for configuring
+network interfaces in Linux containers. Kubernetes uses CNI plugins to set up
+the Pod network.
+
+When a Pod is created, the kubelet calls the CNI plugin to:
+
+1. Create a network interface inside the Pod
+2. Assign an IP address
+3. Set up routes so the Pod can communicate with other Pods
+
+### Major CNI plugins
+
+| Plugin | Key features |
+|--------|-------------|
+| `Calico` | L3 networking with BGP, network policies, widely adopted |
+| `Cilium` | eBPF-based, advanced network policies, observability, CNCF Graduated |
+| `Flannel` | Simple overlay network (VXLAN), no built-in network policy support |
+| `Weave Net` | Mesh overlay, encryption support, simpler setup |
+
+For the KCNA, know that **Calico** and **Cilium** are the most commonly
+referenced plugins and both support `NetworkPolicy` resources. **Flannel** is
+the simplest option but does not enforce network policies on its own.
+
+You can check which CNI is installed by looking at the Pods in the
+`kube-system` namespace:
+
+<TerminalBlock command="kubectl get pods -n kube-system | grep -E 'calico|cilium|flannel'">
+{`calico-node-abc12    1/1   Running   0   3d
+calico-node-def34    1/1   Running   0   3d`}
+</TerminalBlock>
+
+
+## Pod-to-Pod communication
+
+Within the same node, Pods communicate through a **virtual bridge** (like
+`cbr0` or `cni0`). The CNI plugin connects each Pod's `veth` pair to this
+bridge.
+
+Across nodes, the CNI plugin ensures Pod IPs are routable. It does this
+using one of two strategies:
+
+- **Overlay networking** - encapsulates Pod traffic in outer packets
+  (e.g. VXLAN). Works everywhere but adds slight overhead. Used by Flannel,
+  Weave, and Calico in VXLAN mode.
+- **Direct/native routing** - uses BGP or cloud provider route tables to
+  route Pod IPs natively. No encapsulation overhead. Used by Calico in BGP
+  mode and Cilium with native routing.
+
+Either way, the result is the same: any Pod can reach any other Pod by IP,
+across any node, without NAT.
+
+
+## How kube-proxy fits in
+
+`kube-proxy` runs on every node and handles the **Pod-to-Service** traffic
+flow. It watches the API server for Service and Endpoint changes and programs
+rules (iptables or IPVS) so that traffic destined for a Service's virtual IP
+gets forwarded to a healthy backend Pod.
+
+Note: `kube-proxy` does not handle Pod-to-Pod traffic. That is purely the
+CNI plugin's job.
+
+<TerminalBlock command="kubectl get pods -n kube-system -l k8s-app=kube-proxy">
+{`kube-proxy-7xk2m   1/1   Running   0   3d
+kube-proxy-9bt4n   1/1   Running   0   3d`}
+</TerminalBlock>
+
+Some CNI plugins like **Cilium** can replace `kube-proxy` entirely using
+eBPF-based service routing, eliminating the need for iptables rules.
+
+
+## Key takeaways for the KCNA
+
+- Every Pod gets a unique IP - this is non-negotiable in the K8s model
+- No NAT between Pods - Pods see each other's real IPs
+- CNI plugins implement the network; Kubernetes only defines the rules
+- `kube-proxy` handles Service traffic, not Pod-to-Pod traffic
+- Calico and Cilium are the most feature-rich CNI plugins; Flannel is the simplest
+
+</LessonFrame>

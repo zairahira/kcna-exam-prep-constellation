@@ -1,0 +1,107 @@
+import Checkpoint from "@/components/quiz/Checkpoint";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-accent uppercase tracking-wide mb-1">quiz</p>
+  <h1 className="text-2xl font-bold">Cloud Native Observability</h1>
+  <p className="text-fg-subtle text-sm mt-2">8 questions covering all lessons in this module.</p>
+</header>
+
+<Checkpoint id="m11-q1"
+  question={<>The three pillars of observability are:</>}
+  choices={[
+    { id: "a", label: "Uptime, latency, error rate" },
+    { id: "b", label: "Logs, metrics, traces" },
+    { id: "c", label: "Infrastructure, application, network" },
+    { id: "d", label: "Dashboards, alerts, playbooks" },
+  ]}
+  correctId="b"
+  feedback={<p>Logs (what happened), metrics (how much/how often), traces (where time went). Together they let you ask a broad range of questions - the definition of observability.</p>}
+/>
+
+<Checkpoint id="m11-q2"
+  question={<>Prometheus collects metrics via:</>}
+  choices={[
+    { id: "a", label: "A push API - services send metrics to Prometheus" },
+    { id: "b", label: "A pull model - Prometheus scrapes HTTP /metrics endpoints exposed by targets" },
+    { id: "c", label: "SNMP" },
+    { id: "d", label: "Docker events" },
+  ]}
+  correctId="b"
+  feedback={<p>Prometheus scrapes. Targets expose <code>/metrics</code> in plain-text Prometheus format. Pull has benefits: failure to scrape = target is down, no credentials to push, integration with service discovery.</p>}
+/>
+
+<Checkpoint id="m11-q3"
+  question={<>Which metric type is best for counting total HTTP requests served since process start?</>}
+  choices={[
+    { id: "a", label: "Gauge" },
+    { id: "b", label: "Counter" },
+    { id: "c", label: "Histogram" },
+    { id: "d", label: "Summary" },
+  ]}
+  correctId="b"
+  feedback={<p>Counters only go up (reset to 0 on process restart). Use PromQL&apos;s <code>rate()</code> or <code>increase()</code> over time windows to get requests-per-second or deltas.</p>}
+/>
+
+<Checkpoint id="m11-q4"
+  question={<>What's the difference between <code>metrics-server</code> and <code>kube-state-metrics</code>?</>}
+  choices={[
+    { id: "a", label: "They're the same thing" },
+    { id: "b", label: "metrics-server provides resource usage (CPU/memory) for HPA; kube-state-metrics exposes K8s object state as Prometheus metrics" },
+    { id: "c", label: "metrics-server is for logging; kube-state-metrics is for tracing" },
+    { id: "d", label: "Both are deprecated" },
+  ]}
+  correctId="b"
+  feedback={<p>Easy to confuse: <code>metrics-server</code> feeds HPA/kubectl top with CPU/mem usage. <code>kube-state-metrics</code> exposes <em>object</em> state (number of Pods in each phase, replicas desired vs ready, etc.) as Prometheus metrics.</p>}
+/>
+
+<Checkpoint id="m11-q5"
+  question={<>The standard way a Kubernetes app emits logs is:</>}
+  choices={[
+    { id: "a", label: "Write to /var/log inside the container" },
+    { id: "b", label: "Write to stdout/stderr; Kubernetes captures them" },
+    { id: "c", label: "Send to a remote syslog server directly" },
+    { id: "d", label: "Write to an emptyDir volume" },
+  ]}
+  correctId="b"
+  feedback={<p>Twelve-Factor XI: logs as event streams to stdout/stderr. <code>kubectl logs</code> and node-level collectors see them. Writing to local files is invisible to the platform.</p>}
+/>
+
+<Checkpoint id="m11-q6"
+  question={<>OpenTelemetry was created by merging:</>}
+  choices={[
+    { id: "a", label: "Prometheus and Grafana" },
+    { id: "b", label: "OpenTracing and OpenCensus" },
+    { id: "c", label: "Fluentd and Elasticsearch" },
+    { id: "d", label: "Jaeger and Zipkin" },
+  ]}
+  correctId="b"
+  feedback={<p>OpenTracing (API spec) + OpenCensus (libraries) → OpenTelemetry. Aim: one vendor-neutral standard across metrics, logs, and traces.</p>}
+/>
+
+<Checkpoint id="m11-q7"
+  question={<>Distributed traces require services to do what to avoid fragmenting?</>}
+  choices={[
+    { id: "a", label: "Run in the same namespace" },
+    { id: "b", label: "Propagate trace context (e.g. the traceparent header) to downstream calls" },
+    { id: "c", label: "Use the same programming language" },
+    { id: "d", label: "Share a database" },
+  ]}
+  correctId="b"
+  feedback={<p>Trace propagation is the critical piece. Without it, each service starts its own trace and you get disconnected data. OpenTelemetry&apos;s auto-instrumentation handles this for common frameworks.</p>}
+/>
+
+<Checkpoint id="m11-q8"
+  question={<>OpenCost is:</>}
+  choices={[
+    { id: "a", label: "A commercial product from Grafana" },
+    { id: "b", label: "The open-source standard (CNCF Sandbox) for Kubernetes cost monitoring" },
+    { id: "c", label: "A Kubernetes admission controller" },
+    { id: "d", label: "An AWS-only billing tool" },
+  ]}
+  correctId="b"
+  feedback={<p>OpenCost is the open spec + reference implementation for K8s cost attribution. Kubecost builds on it. Not limited to one cloud; works with any cluster.</p>}
+/>
+
+</div>

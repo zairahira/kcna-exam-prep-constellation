@@ -1,0 +1,156 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="DNS in Kubernetes"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "CoreDNS is the default cluster DNS provider",
+    "Service discovery via <svc>.<ns>.svc.cluster.local",
+    "How Pod DNS resolution works",
+    "Headless Services and when to use them",
+  ]}
+>
+
+## CoreDNS
+
+Every Kubernetes cluster runs a DNS server so that Pods can discover Services
+by name instead of by IP address. The default DNS provider is **CoreDNS**.
+
+CoreDNS runs as a `Deployment` in the `kube-system` namespace, fronted by a
+`ClusterIP` Service (usually at `10.96.0.10`). Every Pod in the cluster is
+configured to use this IP as its DNS resolver.
+
+<TerminalBlock command="kubectl get svc -n kube-system kube-dns">
+{`NAME       TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)         AGE
+kube-dns   ClusterIP   10.96.0.10   <none>        53/UDP,53/TCP   5d`}
+</TerminalBlock>
+
+Note: the Service is named `kube-dns` for historical reasons (it was
+originally `kube-dns`), but the actual Pods running behind it are CoreDNS.
+
+<TerminalBlock command="kubectl get pods -n kube-system -l k8s-app=kube-dns">
+{`NAME                       READY   STATUS    AGE
+coredns-5d78c9869d-abc12   1/1     Running   5d
+coredns-5d78c9869d-def34   1/1     Running   5d`}
+</TerminalBlock>
+
+
+## Service DNS names
+
+When you create a Service, CoreDNS automatically creates a DNS record for it.
+The fully qualified domain name (FQDN) follows this pattern:
+
+```
+<service-name>.<namespace>.svc.cluster.local
+```
+
+| Service | Namespace | FQDN |
+|---------|-----------|------|
+| `my-app` | `default` | `my-app.default.svc.cluster.local` |
+| `database` | `production` | `database.production.svc.cluster.local` |
+| `cache` | `staging` | `cache.staging.svc.cluster.local` |
+
+### Short names within the same namespace
+
+Pods don't need to use the full FQDN. Kubernetes configures each Pod's
+`/etc/resolv.conf` with search domains:
+
+<TerminalBlock command="cat /etc/resolv.conf">
+{`nameserver 10.96.0.10
+search default.svc.cluster.local svc.cluster.local cluster.local
+options ndots:5`}
+</TerminalBlock>
+
+This means a Pod in the `default` namespace can reach a Service using:
+
+- `my-app` - just the service name (same namespace)
+- `my-app.default` - service + namespace
+- `my-app.default.svc.cluster.local` - full FQDN
+
+For cross-namespace access, you need at least `<service>.<namespace>`:
+
+<TerminalBlock label="Cross-namespace access">
+{`# From a Pod in the "frontend" namespace, reach a service in "backend":
+curl http://api-server.backend:8080/health`}
+</TerminalBlock>
+
+
+## Pod DNS records
+
+Pods also get DNS records, but using their IP address (with dots replaced by
+dashes):
+
+```
+<pod-ip-dashed>.<namespace>.pod.cluster.local
+```
+
+For example, a Pod with IP `10.244.1.5` in the `default` namespace gets:
+
+```
+10-244-1-5.default.pod.cluster.local
+```
+
+Pod DNS records are rarely used directly. Service DNS is the standard way to
+discover workloads.
+
+
+## Headless Services
+
+A normal `ClusterIP` Service gives you a single virtual IP that load-balances
+across backend Pods. But sometimes you need to discover **individual Pod IPs**
+- for example, in a database cluster where each replica has a unique
+identity.
+
+A **headless Service** is a Service with `clusterIP: None`. It doesn't get a
+virtual IP. Instead, a DNS lookup returns **the IPs of all matching Pods
+directly**.
+
+<TerminalBlock label="headless-service.yaml">
+{`apiVersion: v1
+kind: Service
+metadata:
+  name: db
+spec:
+  clusterIP: None     # headless
+  selector:
+    app: database
+  ports:
+    - port: 5432`}
+</TerminalBlock>
+
+<TerminalBlock command="nslookup db.default.svc.cluster.local">
+{`Name:    db.default.svc.cluster.local
+Address: 10.244.1.5
+Address: 10.244.2.3
+Address: 10.244.3.7`}
+</TerminalBlock>
+
+Headless Services are commonly used with `StatefulSets`, where each Pod gets
+a stable DNS name like `db-0.db.default.svc.cluster.local`.
+
+| Service type | DNS returns | Use case |
+|-------------|-------------|----------|
+| Normal (`ClusterIP`) | Single virtual IP | Most services (load-balanced) |
+| Headless (`clusterIP: None`) | Individual Pod IPs | StatefulSets, databases, custom load balancing |
+
+
+## Debugging DNS
+
+When DNS isn't working, use a debug Pod to test resolution:
+
+<TerminalBlock command="kubectl run dns-test --rm -it --image=busybox -- nslookup my-app">
+{`Server:    10.96.0.10
+Address 1: 10.96.0.10 kube-dns.kube-system.svc.cluster.local
+
+Name:      my-app
+Address 1: 10.96.42.10 my-app.default.svc.cluster.local`}
+</TerminalBlock>
+
+If DNS resolution fails, check that:
+
+- CoreDNS Pods are running in `kube-system`
+- The target Service exists in the expected namespace
+- The Service has `Endpoints` (Pods matching the selector exist and are Ready)
+
+</LessonFrame>

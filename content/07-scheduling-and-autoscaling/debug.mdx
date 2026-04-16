@@ -1,0 +1,51 @@
+import DebugPuzzle from "@/components/puzzle/DebugPuzzle";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-warning uppercase tracking-wide mb-1">debug challenge</p>
+  <h1 className="text-2xl font-bold">Scheduling and Autoscaling</h1>
+  <p className="text-fg-subtle text-sm mt-2">3 challenges covering scheduling, resources, and autoscaling.</p>
+</header>
+
+<DebugPuzzle id="m07-d1" syllabusIds={["K8S-SCHED"]}
+  prompt={<p>A Pod is <code>Pending</code>. <code>kubectl describe pod</code> shows:</p>}
+  artifact={<TerminalBlock>{"Events:\n  Warning  FailedScheduling  0/5 nodes are available: 5 Insufficient cpu.\n"}</TerminalBlock>}
+  choices={[
+    { id: "a", label: "All nodes lack the CPU requested by the Pod. Reduce resources.requests.cpu, scale the Pod replicas down, or add more nodes." },
+    { id: "b", label: "The Pod needs a LoadBalancer Service." },
+    { id: "c", label: "kubectl apply was called with --dry-run." },
+    { id: "d", label: "etcd is full." },
+  ]}
+  correctId="a"
+  explanation={<p>The scheduler filters out all nodes that don&apos;t have enough free CPU for the Pod&apos;s <code>resources.requests.cpu</code>. Fix by lowering the request, scaling cluster (Cluster Autoscaler or manual), or reducing other load on existing nodes.</p>}
+/>
+
+<DebugPuzzle id="m07-d2" syllabusIds={["K8S-SCHED"]}
+  prompt={<p>A Pod has <code>limits.memory: 512Mi</code>. The app allocates 600 MiB. What happens?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "Nothing - limits are advisory." },
+    { id: "b", label: "The container is OOMKilled by the kernel and restarted by kubelet (per restart policy)." },
+    { id: "c", label: "The Pod is rescheduled to a larger node." },
+    { id: "d", label: "The limit is silently raised." },
+  ]}
+  correctId="b"
+  explanation={<p>Memory limits are enforced by the kernel cgroup. Exceed the limit and the Out-Of-Memory killer terminates the container. The Pod restarts per its restart policy, often entering <code>CrashLoopBackOff</code> if it keeps OOMing. Diagnose with <code>kubectl describe pod</code> (look for <code>OOMKilled</code>) and raise the limit or reduce memory use.</p>}
+/>
+
+<DebugPuzzle id="m07-d3" syllabusIds={["K8S-SCHED"]}
+  prompt={<p>A cluster has a node tainted with <code>dedicated=gpu:NoSchedule</code>. A new Pod with no tolerations tries to schedule. Where does it land?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "On the tainted node - taints only affect specific Pods." },
+    { id: "b", label: "On any untainted node. The tainted node is excluded because the Pod has no matching toleration." },
+    { id: "c", label: "Nowhere - NoSchedule blocks the whole cluster." },
+    { id: "d", label: "Kubernetes auto-adds the toleration." },
+  ]}
+  correctId="b"
+  explanation={<p>A <code>NoSchedule</code> taint prevents the scheduler from placing Pods on the node <em>unless</em> they have a matching toleration. Pods without the toleration land on any other node that satisfies their requirements. Use this pattern to dedicate nodes to specific workloads (GPU nodes, spot instances, etc.).</p>}
+/>
+
+</div>

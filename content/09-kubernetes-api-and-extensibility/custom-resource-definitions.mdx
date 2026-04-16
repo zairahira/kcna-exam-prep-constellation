@@ -1,0 +1,184 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Custom Resource Definitions"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "CRDs extend the Kubernetes API with new resource types (kinds)",
+    "The structure of a CRD manifest - group, names, scope, versions, schema",
+    "Once a CRD is created, kubectl works with it just like built-in resources",
+    "Validation via OpenAPI v3 schema inside the CRD",
+  ]}
+>
+
+## Extending the API
+
+Kubernetes ships with built-in resource types like Pods, Deployments, and
+Services. But what if you need a resource type that does not exist? For
+example, a `Database`, a `Certificate`, or a `BackupSchedule`?
+
+**Custom Resource Definitions (CRDs)** let you register entirely new
+resource types with the API server. Once registered, the new type behaves
+like any built-in resource - you can create, get, list, update, and
+delete instances using `kubectl`.
+
+No code changes to the API server are required. You just apply a CRD
+manifest, and the new kind is immediately available.
+
+
+## CRD structure
+
+A CRD is itself a Kubernetes object. Here is an example that registers a
+new `Backup` resource:
+
+<TerminalBlock label="backup-crd.yaml">
+{`apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: backups.example.com
+spec:
+  group: example.com
+  names:
+    kind: Backup
+    plural: backups
+    singular: backup
+    shortNames:
+      - bk
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - schedule
+                - target
+              properties:
+                schedule:
+                  type: string
+                  description: "Cron expression for backup frequency"
+                target:
+                  type: string
+                  description: "Name of the database to back up"
+                retentionDays:
+                  type: integer
+                  default: 30`}
+</TerminalBlock>
+
+Key fields explained:
+
+| Field | Purpose |
+|-------|---------|
+| `spec.group` | The API group for the new resource (`example.com`) |
+| `spec.names.kind` | The PascalCase kind name (`Backup`) |
+| `spec.names.plural` | The plural form used in URLs and kubectl (`backups`) |
+| `spec.names.shortNames` | Optional short aliases (`bk`) |
+| `spec.scope` | `Namespaced` or `Cluster` |
+| `spec.versions` | One or more API versions for this resource |
+| `schema.openAPIV3Schema` | Validation schema for the resource fields |
+
+
+## Applying the CRD
+
+<TerminalBlock command="kubectl apply -f backup-crd.yaml">
+{`customresourcedefinition.apiextensions.k8s.io/backups.example.com created`}
+</TerminalBlock>
+
+The API server now knows about the `Backup` kind. You can verify:
+
+<TerminalBlock command="kubectl api-resources | grep backups">
+{`backups   bk   example.com/v1   true   Backup`}
+</TerminalBlock>
+
+
+## Creating custom resources
+
+With the CRD registered, you can create instances (called **custom
+resources** or CRs):
+
+<TerminalBlock label="my-backup.yaml">
+{`apiVersion: example.com/v1
+kind: Backup
+metadata:
+  name: daily-db-backup
+  namespace: production
+spec:
+  schedule: "0 2 * * *"
+  target: orders-db
+  retentionDays: 14`}
+</TerminalBlock>
+
+<TerminalBlock command="kubectl apply -f my-backup.yaml">
+{`backup.example.com/daily-db-backup created`}
+</TerminalBlock>
+
+## kubectl works as expected
+
+All standard `kubectl` commands work with CRDs:
+
+<TerminalBlock command="kubectl get backups -n production">
+{`NAME               AGE
+daily-db-backup    10s`}
+</TerminalBlock>
+
+<TerminalBlock command="kubectl get bk -n production">
+{`NAME               AGE
+daily-db-backup    15s`}
+</TerminalBlock>
+
+<TerminalBlock command="kubectl describe backup daily-db-backup -n production">
+{`Name:         daily-db-backup
+Namespace:    production
+API Version:  example.com/v1
+Kind:         Backup
+Spec:
+  Schedule:        0 2 * * *
+  Target:          orders-db
+  Retention Days:  14
+...`}
+</TerminalBlock>
+
+You can also use `-o yaml`, `-o json`, `delete`, `edit`, and `patch` -
+everything you would do with a built-in resource.
+
+
+## Validation with OpenAPI schema
+
+The `openAPIV3Schema` in the CRD defines what fields are allowed and
+what types they must be. If someone submits an invalid custom resource,
+the API server rejects it:
+
+<TerminalBlock label="invalid-backup.yaml (missing required field)">
+{`apiVersion: example.com/v1
+kind: Backup
+metadata:
+  name: bad-backup
+spec:
+  schedule: "0 2 * * *"
+  # target is missing - but it's required`}
+</TerminalBlock>
+
+<TerminalBlock command="kubectl apply -f invalid-backup.yaml">
+{`The Backup "bad-backup" is invalid: spec.target: Required value`}
+</TerminalBlock>
+
+This validation happens at the API server level before the object is
+stored. It catches mistakes early, just like validation on built-in
+resources.
+
+
+## CRDs alone are just data
+
+An important point: a CRD by itself only gives you a **data store** in
+the API. The API server will accept, store, and return your custom
+resources - but nothing will **act on** them. To add behavior (e.g.
+actually performing backups), you need a **custom controller** or
+**operator** watching those resources. That is the next lesson.
+
+</LessonFrame>

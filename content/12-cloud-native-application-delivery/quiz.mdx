@@ -1,0 +1,107 @@
+import Checkpoint from "@/components/quiz/Checkpoint";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-accent uppercase tracking-wide mb-1">quiz</p>
+  <h1 className="text-2xl font-bold">Cloud Native Application Delivery</h1>
+  <p className="text-fg-subtle text-sm mt-2">8 questions covering all lessons in this module.</p>
+</header>
+
+<Checkpoint id="m12-q1"
+  question={<>What's the difference between Continuous Delivery and Continuous Deployment?</>}
+  choices={[
+    { id: "a", label: "They're the same thing" },
+    { id: "b", label: "Continuous Delivery has a manual gate before prod deploys; Continuous Deployment automates the whole path to prod" },
+    { id: "c", label: "Continuous Delivery is older and deprecated" },
+    { id: "d", label: "Continuous Deployment only works on Kubernetes" },
+  ]}
+  correctId="b"
+  feedback={<p>Both "CD"s. Continuous Delivery keeps the system always-deployable but requires an explicit release action. Continuous Deployment automates that too - every green build goes to prod.</p>}
+/>
+
+<Checkpoint id="m12-q2"
+  question={<>Which of these is a CNCF-graduated CI/CD pipeline tool that runs pipelines as native Kubernetes CRDs?</>}
+  choices={[
+    { id: "a", label: "Jenkins" },
+    { id: "b", label: "GitHub Actions" },
+    { id: "c", label: "Tekton" },
+    { id: "d", label: "CircleCI" },
+  ]}
+  correctId="c"
+  feedback={<p>Tekton models pipelines as Kubernetes CRDs (<code>Pipeline</code>, <code>Task</code>, <code>PipelineRun</code>). Each task runs in a Pod. CNCF Graduated.</p>}
+/>
+
+<Checkpoint id="m12-q3"
+  question={<>The GitOps "source of truth" is:</>}
+  choices={[
+    { id: "a", label: "The cluster state" },
+    { id: "b", label: "A Git repository" },
+    { id: "c", label: "The CI pipeline" },
+    { id: "d", label: "Developer laptops" },
+  ]}
+  correctId="b"
+  feedback={<p>Git. The cluster&apos;s actual state may drift, but Git is the source of truth; the controller reconciles the cluster back to Git.</p>}
+/>
+
+<Checkpoint id="m12-q4"
+  question={<>In GitOps, the deployment model is:</>}
+  choices={[
+    { id: "a", label: "Push - CI pushes changes into the cluster with kubectl apply" },
+    { id: "b", label: "Pull - a controller inside the cluster pulls desired state from Git and reconciles" },
+    { id: "c", label: "Manual - operators apply changes one at a time" },
+    { id: "d", label: "Eventual - changes appear after an unknown delay" },
+  ]}
+  correctId="b"
+  feedback={<p>Pull model: the cluster reaches out to Git, not the other way around. No inbound cluster credentials needed in CI.</p>}
+/>
+
+<Checkpoint id="m12-q5"
+  question={<>To roll back a GitOps-managed Deployment, the canonical action is:</>}
+  choices={[
+    { id: "a", label: "kubectl rollout undo" },
+    { id: "b", label: "git revert the offending commit (or move the tracked ref)" },
+    { id: "c", label: "Delete and recreate the Pod" },
+    { id: "d", label: "Restart the GitOps controller" },
+  ]}
+  correctId="b"
+  feedback={<p>Under GitOps, state follows Git. Revert the commit and the controller applies the previous state. Using kubectl directly would create drift that gets reconciled away.</p>}
+/>
+
+<Checkpoint id="m12-q6"
+  question={<>Which pair is both <strong>CNCF Graduated</strong> GitOps tools?</>}
+  choices={[
+    { id: "a", label: "Argo CD and Jenkins X" },
+    { id: "b", label: "Argo CD and Flux" },
+    { id: "c", label: "Helm and Kustomize" },
+    { id: "d", label: "Terraform and Pulumi" },
+  ]}
+  correctId="b"
+  feedback={<p>Argo CD and Flux are both CNCF Graduated. Helm is also CNCF Graduated but it&apos;s a package manager, not a GitOps tool. Terraform/Pulumi/Jenkins X aren&apos;t CNCF.</p>}
+/>
+
+<Checkpoint id="m12-q7"
+  question={<>Helm's unit of distribution is a:</>}
+  choices={[
+    { id: "a", label: "Kustomization" },
+    { id: "b", label: "Manifest" },
+    { id: "c", label: "Chart" },
+    { id: "d", label: "Image" },
+  ]}
+  correctId="c"
+  feedback={<p>A chart is a bundle of templated manifests + values + metadata. You install charts as releases with <code>helm install</code>.</p>}
+/>
+
+<Checkpoint id="m12-q8"
+  question={<>Which statement about Kustomize is correct?</>}
+  choices={[
+    { id: "a", label: "It uses Go templates with {{ }} placeholders" },
+    { id: "b", label: "It's built into kubectl (kubectl apply -k) and uses overlays + patches instead of templates" },
+    { id: "c", label: "It requires a separate runtime service in the cluster" },
+    { id: "d", label: "It's only for Helm chart authoring" },
+  ]}
+  correctId="b"
+  feedback={<p>Kustomize is overlay-based, built into kubectl (<code>-k</code>), no templates. You keep plain YAML bases and patch them per environment.</p>}
+/>
+
+</div>

@@ -1,0 +1,182 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Node selectors and node affinity"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "nodeSelector - the simplest way to constrain Pods to specific nodes",
+    "nodeAffinity - requiredDuringScheduling vs preferredDuringScheduling",
+    "podAffinity and podAntiAffinity - scheduling relative to other Pods",
+    "Topology spread constraints - distributing Pods evenly across zones or nodes",
+  ]}
+>
+
+## nodeSelector - the simple approach
+
+`nodeSelector` is the easiest way to tell Kubernetes to schedule a Pod onto
+a node that has specific **labels**. You add labels to nodes, then reference
+them in the Pod spec.
+
+### Label a node
+
+<TerminalBlock command="kubectl label nodes worker-1 disktype=ssd">
+{`node/worker-1 labeled`}
+</TerminalBlock>
+
+### Use nodeSelector in a Pod spec
+
+<TerminalBlock label="pod-with-nodeselector.yaml">
+{`apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  nodeSelector:
+    disktype: ssd
+  containers:
+  - name: nginx
+    image: nginx:1.25`}
+</TerminalBlock>
+
+The scheduler will only place this Pod on nodes with the label
+`disktype=ssd`. If no node has that label, the Pod stays `Pending`.
+
+`nodeSelector` is a hard requirement - it is all-or-nothing. For more
+flexible rules, use node affinity.
+
+
+## Node affinity
+
+Node affinity is a more expressive version of `nodeSelector`. It supports
+two modes:
+
+| Mode | Effect |
+|------|--------|
+| `requiredDuringSchedulingIgnoredDuringExecution` | **Hard rule** - the Pod will not be scheduled unless the condition is met. Same as `nodeSelector` but with richer operators. |
+| `preferredDuringSchedulingIgnoredDuringExecution` | **Soft rule** - the scheduler tries to place the Pod on a matching node but will use another node if none match. |
+
+The `IgnoredDuringExecution` part means that if a node's labels change after
+the Pod is already running, the Pod is **not** evicted. It only matters at
+scheduling time.
+
+### Example - required affinity
+
+<TerminalBlock label="required-affinity.yaml">
+{`spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: topology.kubernetes.io/zone
+            operator: In
+            values:
+            - us-east-1a
+            - us-east-1b`}
+</TerminalBlock>
+
+This Pod can only be scheduled on nodes in zone `us-east-1a` or
+`us-east-1b`.
+
+### Example - preferred affinity
+
+<TerminalBlock label="preferred-affinity.yaml">
+{`spec:
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 80
+        preference:
+          matchExpressions:
+          - key: disktype
+            operator: In
+            values:
+            - ssd`}
+</TerminalBlock>
+
+The scheduler prefers nodes with `disktype=ssd` but will fall back to other
+nodes if needed. The `weight` (1-100) lets you combine multiple preferences
+with different priorities.
+
+### Operators
+
+Node affinity supports operators beyond simple equality:
+
+| Operator | Meaning |
+|----------|---------|
+| `In` | Label value is in the given list |
+| `NotIn` | Label value is not in the list |
+| `Exists` | Label key exists (any value) |
+| `DoesNotExist` | Label key does not exist |
+| `Gt` | Label value is greater than (numeric) |
+| `Lt` | Label value is less than (numeric) |
+
+
+## Pod affinity and pod anti-affinity
+
+While node affinity constrains Pods based on **node labels**, pod affinity
+constrains Pods based on **which other Pods are already running** on a node.
+
+| Type | Use case |
+|------|----------|
+| `podAffinity` | Schedule this Pod **near** Pods with certain labels (e.g. co-locate a cache with the app it serves) |
+| `podAntiAffinity` | Schedule this Pod **away from** Pods with certain labels (e.g. spread replicas across nodes) |
+
+Both support `required` and `preferred` modes, just like node affinity.
+
+### Example - anti-affinity to spread replicas
+
+<TerminalBlock label="anti-affinity.yaml">
+{`spec:
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app: web
+        topologyKey: kubernetes.io/hostname`}
+</TerminalBlock>
+
+This ensures no two Pods with label `app: web` land on the same node. The
+`topologyKey` defines what "same" means - here, it is the node hostname.
+
+
+## Topology spread constraints
+
+Topology spread constraints give you fine-grained control over how Pods are
+**distributed** across failure domains (zones, nodes, regions).
+
+<TerminalBlock label="topology-spread.yaml">
+{`spec:
+  topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app: web`}
+</TerminalBlock>
+
+| Field | Meaning |
+|-------|---------|
+| `maxSkew` | Maximum allowed difference in Pod count between any two zones |
+| `topologyKey` | The node label that defines the topology domain |
+| `whenUnsatisfiable` | `DoNotSchedule` (hard) or `ScheduleAnyway` (soft) |
+| `labelSelector` | Which Pods are counted for skew calculation |
+
+This is useful for ensuring high availability - if one zone goes down, you
+want roughly equal Pods in each remaining zone.
+
+
+## Quick comparison
+
+| Mechanism | Targets | Hard/Soft | Use case |
+|-----------|---------|-----------|----------|
+| `nodeSelector` | Node labels | Hard only | Simple node constraint |
+| `nodeAffinity` | Node labels | Hard + Soft | Flexible node constraint with operators |
+| `podAffinity` | Pod labels | Hard + Soft | Co-locate related Pods |
+| `podAntiAffinity` | Pod labels | Hard + Soft | Spread replicas apart |
+| Topology spread | Topology domains | Hard + Soft | Even distribution across zones/nodes |
+
+</LessonFrame>

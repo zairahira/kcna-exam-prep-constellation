@@ -1,0 +1,50 @@
+import Remember from "@/components/Remember";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-fg-subtle uppercase tracking-wide mb-1">review</p>
+  <h1 className="text-2xl font-bold">The Kubernetes API and Extensibility</h1>
+  <p className="text-fg-subtle text-sm mt-2">Key facts from all lessons in this module.</p>
+</header>
+
+<Remember
+  points={[
+    <>Every K8s object has four top-level fields: <code>apiVersion</code>, <code>kind</code>, <code>metadata</code>, <code>spec</code> - plus <code>status</code> (written by the control plane).</>,
+    <><strong>spec</strong> = desired state (you write). <strong>status</strong> = observed state (Kubernetes writes).</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <>Core API group has <code>apiVersion: v1</code> (Pods, Services, ConfigMaps).</>,
+    <>Named groups: <code>apps/v1</code> (workloads), <code>batch/v1</code> (Jobs), <code>networking.k8s.io/v1</code> (Ingress, NetworkPolicy), <code>rbac.authorization.k8s.io/v1</code> (RBAC).</>,
+    <>Version lifecycle: <code>v1alpha1</code> (unstable) → <code>v1beta1</code> (mostly stable) → <code>v1</code> (stable, deprecation guaranteed months in advance).</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <>A <strong>CRD</strong> (CustomResourceDefinition) adds a new <em>kind</em> to the API. <code>kubectl get &lt;kind&gt;</code>, RBAC, etc. all work on it.</>,
+    <>CRDs have an OpenAPI schema for validation.</>,
+    <>A CRD alone doesn&apos;t <em>do</em> anything - it&apos;s metadata. You need a controller.</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <><strong>Operator</strong> = CRD + custom controller. The controller watches CR objects and reconciles real-world state.</>,
+    <>Well-known operators: Prometheus Operator, cert-manager, various database operators, Argo CD.</>,
+    <><strong>OperatorHub.io</strong> catalogs operators. The <strong>Operator Framework</strong> / OLM is tooling for building and distributing them.</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <>The <strong>declarative model</strong>: you describe desired state; controllers continuously reconcile.</>,
+    <>The reconcile loop is <strong>idempotent</strong> and self-healing. Re-applying the same manifest is safe. Drift gets corrected.</>,
+    <>This is why Kubernetes feels "alive" - everything is a control loop, not a one-shot action.</>,
+  ]}
+/>
+
+</div>

@@ -1,0 +1,90 @@
+import LessonFrame from "@/components/LessonFrame";
+
+<LessonFrame
+  lessonTitle="Container runtimes"
+  domain="Cloud Native Architecture · 22%"
+  mustLearn={[
+    "What a container runtime does and the two levels (high-level vs low-level)",
+    "What containerd is and why it's the default runtime in most Kubernetes clusters",
+    "What CRI-O is and how it differs from containerd",
+    "Docker's historical role and why Kubernetes dropped dockershim",
+    "What CRI (Container Runtime Interface) is",
+  ]}
+>
+
+## What is a container runtime?
+
+A **container runtime** is the software that actually runs containers on a
+machine. It handles pulling images, setting up the container's filesystem,
+creating namespaces and cgroups, and starting the process.
+
+There are two levels:
+
+### High-level runtimes
+
+Manage the full container lifecycle - image management, networking setup,
+storage, API for external tools (like Kubernetes) to talk to.
+
+- **`containerd`** - the most widely used. Originally extracted from Docker.
+  CNCF Graduated project. Default runtime in most managed Kubernetes
+  services (EKS, GKE, AKS).
+- **`CRI-O`** - built specifically for Kubernetes. Implements the CRI
+  (Container Runtime Interface) and nothing else. Lighter than containerd
+  because it doesn't try to serve non-Kubernetes use cases. Common in
+  OpenShift and Red Hat environments.
+
+### Low-level runtimes
+
+Do the actual Linux kernel work - create namespaces, set cgroups, exec the
+process. High-level runtimes delegate to these.
+
+- **`runc`** - the reference OCI runtime. Both containerd and CRI-O use it
+  under the hood by default.
+- **`crun`** - a faster, C-based alternative to runc.
+- **`gVisor` (`runsc`)** - sandboxed runtime from Google. Intercepts
+  syscalls for extra isolation. Used when you don't trust the workload.
+- **`Kata Containers`** - runs each container inside a lightweight VM for
+  hardware-level isolation.
+
+
+## CRI - the Container Runtime Interface
+
+**CRI** is a Kubernetes API that defines how the `kubelet` talks to a
+container runtime. Any runtime that implements CRI can plug into Kubernetes.
+
+Before CRI existed, Kubernetes had hard-coded support for Docker via a
+component called **dockershim**. This was removed in Kubernetes v1.24.
+
+The removal of dockershim does **not** mean Docker images stopped working.
+Docker images are OCI-compliant - they run on any CRI-compatible runtime
+(containerd, CRI-O, etc.). What was removed was the Kubernetes-specific
+adapter that let kubelet talk to the Docker daemon directly.
+
+
+## Docker's role today
+
+Docker is still a valid tool for **building** images and for local
+development. What changed:
+
+| Task | Docker's role |
+|------|--------------|
+| Building images | Still widely used (`docker build`) |
+| Local development | Still widely used (`docker run`, `docker compose`) |
+| Kubernetes runtime | **No longer used** - replaced by containerd or CRI-O |
+
+For the KCNA exam: know that Docker images are OCI-compatible and still
+work everywhere, but Docker-the-runtime is not what Kubernetes uses in
+production.
+
+
+## Quick comparison
+
+| Runtime | Level | Used by | Notes |
+|---------|-------|---------|-------|
+| `containerd` | High-level | Most managed K8s (EKS, GKE, AKS) | CNCF Graduated, general-purpose |
+| `CRI-O` | High-level | OpenShift, Fedora CoreOS | K8s-only, lightweight |
+| `runc` | Low-level | Both of the above | OCI reference implementation |
+| `gVisor` | Low-level | GKE Sandbox | Extra isolation via syscall interception |
+| `Kata Containers` | Low-level | Security-sensitive workloads | VM-based isolation |
+
+</LessonFrame>

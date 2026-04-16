@@ -1,0 +1,56 @@
+import Remember from "@/components/Remember";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-fg-subtle uppercase tracking-wide mb-1">review</p>
+  <h1 className="text-2xl font-bold">Networking and Services</h1>
+  <p className="text-fg-subtle text-sm mt-2">Key facts from all lessons in this module.</p>
+</header>
+
+<Remember
+  points={[
+    <>K8s networking model: every Pod gets a unique IP, Pods can talk to any other Pod in the cluster <strong>without NAT</strong>, flat network.</>,
+    <>The network is implemented by a <strong>CNI plugin</strong>. Popular options: <strong>Calico</strong> (policy-rich), <strong>Cilium</strong> (eBPF-based), <strong>Flannel</strong> (simple), <strong>Weave</strong>.</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <>Pods are ephemeral; <strong>Services</strong> give them a stable virtual IP and DNS name.</>,
+    <>A Service&apos;s <code>selector</code> matches Pod labels → produces <strong>Endpoints</strong> (or EndpointSlices). Empty endpoints = selector mismatch.</>,
+    <><strong>ClusterIP</strong> (default, internal only), <strong>NodePort</strong> (opens a port on every node), <strong>LoadBalancer</strong> (cloud-provisioned external LB), <strong>ExternalName</strong> (DNS alias).</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <>An <strong>Ingress</strong> is HTTP(S) routing config in front of Services - host/path rules, TLS termination.</>,
+    <>Ingress needs an <strong>Ingress controller</strong> (NGINX, Traefik, HAProxy) actually running. Without one, the Ingress object is inert.</>,
+    <>The <strong>Gateway API</strong> is the next-gen replacement for Ingress - more expressive, role-oriented.</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <><strong>CoreDNS</strong> handles service discovery. Services resolve at <code>&lt;svc&gt;.&lt;ns&gt;.svc.cluster.local</code>.</>,
+    <>Short names work via DNS search suffixes: a Pod can hit <code>billing</code> (same ns) or <code>billing.core</code> (different ns).</>,
+    <><strong>Headless Services</strong> (<code>clusterIP: None</code>) return Pod IPs directly - used with StatefulSets.</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <><strong>NetworkPolicy</strong> = Pod-level firewall (ingress and egress rules). Default is "allow all" until you apply a policy - then it becomes default-deny for the selected Pods.</>,
+    <>NetworkPolicy requires a CNI that enforces it (Calico, Cilium, etc.). Stock Flannel does not.</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <>A <strong>service mesh</strong> adds cross-cutting concerns (mTLS, retries, traffic splitting, observability) transparently by injecting a sidecar proxy into each Pod.</>,
+    <><strong>Istio</strong> and <strong>Linkerd</strong> are the prominent meshes. <strong>Envoy</strong> is the CNCF Graduated proxy used as the sidecar in Istio.</>,
+  ]}
+/>
+
+</div>

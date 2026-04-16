@@ -1,0 +1,229 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Useful flags and output formatting"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "Namespace flags: -n and -A (--all-namespaces)",
+    "Label selectors: -l for filtering resources",
+    "Output formatting: -o yaml, -o json, -o wide, and -o jsonpath",
+    "Watch mode (-w), --previous for crashed containers, and --dry-run=client",
+  ]}
+>
+
+## Namespace flags
+
+By default, kubectl targets the namespace set in your current context
+(usually `default`). You can override this per command.
+
+### -n (specific namespace)
+
+<TerminalBlock command="kubectl get pods -n kube-system">
+{`NAME                               READY   STATUS    RESTARTS   AGE
+coredns-6d4b75cb6d-abc12            1/1     Running   0          3d
+etcd-minikube                       1/1     Running   0          3d
+kube-apiserver-minikube             1/1     Running   0          3d
+kube-controller-manager-minikube    1/1     Running   0          3d
+kube-scheduler-minikube             1/1     Running   0          3d`}
+</TerminalBlock>
+
+### -A / --all-namespaces
+
+List resources across **every** namespace in the cluster:
+
+<TerminalBlock command="kubectl get pods -A">
+{`NAMESPACE     NAME                               READY   STATUS    RESTARTS   AGE
+default       nginx-7c5ddbdf54-k2xqp              1/1     Running   0          12m
+kube-system   coredns-6d4b75cb6d-abc12             1/1     Running   0          3d
+kube-system   etcd-minikube                        1/1     Running   0          3d
+monitoring    prometheus-server-0                  1/1     Running   0          1d`}
+</TerminalBlock>
+
+Notice the output adds a `NAMESPACE` column so you can tell where each
+resource lives. This is especially useful when you are not sure which
+namespace a workload is running in.
+
+
+## Label selectors (-l)
+
+Labels are key-value pairs attached to Kubernetes objects. The `-l` flag
+filters resources by their labels.
+
+### Match a single label
+
+<TerminalBlock command="kubectl get pods -l app=nginx">
+{`NAME                     READY   STATUS    RESTARTS   AGE
+nginx-7c5ddbdf54-k2xqp   1/1     Running   0          12m
+nginx-7c5ddbdf54-m9r3t   1/1     Running   0          12m
+nginx-7c5ddbdf54-x7bwq   1/1     Running   0          12m`}
+</TerminalBlock>
+
+### Match multiple labels
+
+<TerminalBlock command="kubectl get pods -l app=nginx,tier=frontend">
+{`NAME                     READY   STATUS    RESTARTS   AGE
+nginx-7c5ddbdf54-k2xqp   1/1     Running   0          12m`}
+</TerminalBlock>
+
+### Set-based selectors
+
+<TerminalBlock command="kubectl get pods -l 'environment in (staging,production)'">
+{`NAME                      READY   STATUS    RESTARTS   AGE
+api-server-abc123          1/1     Running   0          2h
+web-frontend-def456        1/1     Running   0          2h`}
+</TerminalBlock>
+
+### Label selectors work with any resource type
+
+<TerminalBlock command="kubectl get services -l app=nginx">
+{`NAME        TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+nginx-svc   ClusterIP   10.96.142.87   <none>        80/TCP    12m`}
+</TerminalBlock>
+
+
+## Output formatting (-o)
+
+The `-o` flag controls how kubectl formats its output. This is one of the
+most powerful features for both daily work and the exam.
+
+### -o wide
+
+Shows additional columns (e.g. node name, Pod IP):
+
+<TerminalBlock command="kubectl get pods -o wide">
+{`NAME                     READY   STATUS    RESTARTS   AGE   IP           NODE       NOMINATED NODE   READINESS GATES
+nginx-7c5ddbdf54-k2xqp   1/1     Running   0          12m   10.244.0.5   minikube   <none>           <none>`}
+</TerminalBlock>
+
+### -o yaml
+
+Outputs the full resource definition in YAML format - useful for
+inspecting or saving a resource:
+
+<TerminalBlock command="kubectl get pod nginx-7c5ddbdf54-k2xqp -o yaml">
+{`apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-7c5ddbdf54-k2xqp
+  namespace: default
+  labels:
+    app: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.25
+    ports:
+    - containerPort: 80
+  ...`}
+</TerminalBlock>
+
+### -o json
+
+Same as `-o yaml` but in JSON format. Useful for piping to `jq`:
+
+<TerminalBlock command="kubectl get pod nginx-7c5ddbdf54-k2xqp -o json | jq '.status.phase'">
+{`"Running"`}
+</TerminalBlock>
+
+### -o jsonpath
+
+Extract specific fields directly without external tools:
+
+<TerminalBlock command="kubectl get pod nginx-7c5ddbdf54-k2xqp -o jsonpath='{.status.podIP}'">
+{`10.244.0.5`}
+</TerminalBlock>
+
+<TerminalBlock command="kubectl get pods -o jsonpath='{.items[*].metadata.name}'">
+{`nginx-7c5ddbdf54-k2xqp redis-master-0`}
+</TerminalBlock>
+
+### Output format summary
+
+| Flag | Output | Use case |
+|------|--------|----------|
+| (default) | Human-readable table | Quick overview |
+| `-o wide` | Table with extra columns | See node, IP, etc. |
+| `-o yaml` | Full YAML manifest | Inspect or export a resource |
+| `-o json` | Full JSON manifest | Pipe to `jq` or other tools |
+| `-o jsonpath='{...}'` | Specific fields only | Scripting, extracting values |
+| `-o name` | Just `type/name` | Scripting, piping to other commands |
+
+
+## Watch mode (-w)
+
+The `-w` flag watches for changes and prints updates as they happen:
+
+<TerminalBlock command="kubectl get pods -w">
+{`NAME                     READY   STATUS    RESTARTS   AGE
+nginx-7c5ddbdf54-k2xqp   1/1     Running   0          12m
+nginx-7c5ddbdf54-k2xqp   1/1     Terminating   0      13m
+nginx-7c5ddbdf54-abc12   0/1     Pending       0      0s
+nginx-7c5ddbdf54-abc12   1/1     Running       0      2s`}
+</TerminalBlock>
+
+This is useful when watching a rollout, waiting for a Pod to become ready,
+or monitoring during troubleshooting. Press `Ctrl+C` to stop watching.
+
+
+## --previous (crashed container logs)
+
+When a container crashes and restarts, `kubectl logs` shows the **current**
+container's output. Add `--previous` to see the logs from the container
+that crashed:
+
+<TerminalBlock command="kubectl logs my-pod --previous">
+{`Error: cannot bind to port 8080: address already in use
+panic: runtime error: ...`}
+</TerminalBlock>
+
+This flag is critical for debugging `CrashLoopBackOff` situations where
+the container restarts so quickly you cannot catch the error in real time.
+
+
+## --dry-run=client
+
+Validates and generates the resource definition **without actually creating
+anything** on the cluster:
+
+<TerminalBlock command="kubectl create deployment nginx --image=nginx:1.25 --dry-run=client -o yaml > deployment.yaml">
+{``}
+</TerminalBlock>
+
+This is a common workflow:
+
+1. Generate YAML with `--dry-run=client -o yaml`
+2. Edit the file to customize it
+3. Apply it with `kubectl apply -f`
+
+The `--dry-run=client` flag is processed entirely on your machine.
+There is also `--dry-run=server`, which sends the request to the API
+server for validation (including admission webhooks) but does not persist
+the object.
+
+| Flag | Where it runs | What it checks |
+|------|--------------|----------------|
+| `--dry-run=client` | Your machine | Basic YAML validity |
+| `--dry-run=server` | API server | Full validation including webhooks |
+
+
+## Combining flags
+
+Flags can be combined freely. A few practical examples:
+
+<TerminalBlock command="kubectl get pods -n production -l app=api -o wide">
+{`NAME                   READY   STATUS    RESTARTS   AGE   IP            NODE
+api-7f8c9d-abc12       1/1     Running   0          2h    10.244.1.12   node-1
+api-7f8c9d-def34       1/1     Running   0          2h    10.244.2.8    node-2`}
+</TerminalBlock>
+
+<TerminalBlock command={`kubectl get pods -A -l tier=backend -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\\n"}{end}'`}>
+{`default/api-7f8c9d-abc12
+staging/api-6a7b8c-xyz99`}
+</TerminalBlock>
+
+The ability to combine namespace selection, label filtering, and output
+formatting into a single command is what makes kubectl productive for
+real-world cluster management.
+
+</LessonFrame>

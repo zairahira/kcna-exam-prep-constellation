@@ -1,0 +1,187 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Network policies"
+  domain="Container Orchestration · 22%"
+  mustLearn={[
+    "NetworkPolicy is a Pod-level firewall built into Kubernetes",
+    "Ingress and egress rules control traffic in and out of Pods",
+    "Default-deny policies and why they matter",
+    "NetworkPolicy requires a CNI plugin that supports it (Calico, Cilium - not Flannel)",
+  ]}
+>
+
+## What are network policies?
+
+By default, Kubernetes allows **all traffic** between all Pods. Any Pod can
+talk to any other Pod in any namespace. This is simple but not secure.
+
+A **NetworkPolicy** is a Kubernetes resource that acts as a **Pod-level
+firewall**. It lets you control which Pods can send traffic to (and receive
+traffic from) other Pods, namespaces, or IP ranges.
+
+Think of it this way: without NetworkPolicy, your cluster is an open
+office where everyone can talk to everyone. With NetworkPolicy, you add
+walls and doors.
+
+
+## How NetworkPolicy works
+
+A NetworkPolicy:
+
+1. **Selects target Pods** using `podSelector` (labels)
+2. Defines **ingress rules** (who can send traffic *to* those Pods)
+3. Defines **egress rules** (where those Pods can send traffic *to*)
+
+<TerminalBlock label="network-policy.yaml">
+{`apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-to-api
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: api            # applies to Pods with app=api
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend   # only frontend Pods can reach api
+      ports:
+        - protocol: TCP
+          port: 8080`}
+</TerminalBlock>
+
+This policy says: "Pods labeled `app: api` only accept incoming TCP traffic
+on port 8080, and only from Pods labeled `app: frontend`."
+
+
+## Ingress vs egress rules
+
+| Direction | Controls | Question it answers |
+|-----------|----------|-------------------|
+| **Ingress** | Incoming traffic to the selected Pods | "Who is allowed to talk *to* these Pods?" |
+| **Egress** | Outgoing traffic from the selected Pods | "Where are these Pods allowed to talk *to*?" |
+
+You can define both in a single policy or create separate policies for each
+direction.
+
+### Egress example
+
+<TerminalBlock label="egress-policy.yaml">
+{`apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-egress
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      app: api
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: database
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:                     # allow DNS resolution
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53`}
+</TerminalBlock>
+
+Note: when restricting egress, always remember to allow **DNS traffic** (UDP
+port 53) or your Pods won't be able to resolve Service names.
+
+
+## Default deny
+
+The most important pattern for network security is the **default-deny**
+policy. It blocks all traffic to (or from) Pods in a namespace, then you
+add explicit allow rules for what should be permitted.
+
+### Default deny all ingress
+
+<TerminalBlock label="default-deny-ingress.yaml">
+{`apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: production
+spec:
+  podSelector: {}       # empty = selects ALL Pods in the namespace
+  policyTypes:
+    - Ingress`}
+</TerminalBlock>
+
+An empty `podSelector` (`{}`) selects every Pod in the namespace. No
+`ingress` rules means no traffic is allowed in. You then create additional
+NetworkPolicy resources to whitelist specific flows.
+
+### Default deny all egress
+
+<TerminalBlock label="default-deny-egress.yaml">
+{`apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-egress
+  namespace: production
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress`}
+</TerminalBlock>
+
+
+## Selector types
+
+NetworkPolicy rules can match traffic sources/destinations using three
+selector types:
+
+| Selector | Matches |
+|----------|---------|
+| `podSelector` | Pods with specific labels (in the same namespace) |
+| `namespaceSelector` | All Pods in namespaces with specific labels |
+| `ipBlock` | External IP CIDR ranges (e.g. `10.0.0.0/24`) |
+
+These can be combined. For example, to allow traffic from Pods labeled
+`role: monitoring` in namespaces labeled `team: ops`:
+
+<TerminalBlock label="combined-selectors.yaml">
+{`ingress:
+  - from:
+      - namespaceSelector:
+            matchLabels:
+              team: ops
+        podSelector:
+            matchLabels:
+              role: monitoring`}
+</TerminalBlock>
+
+
+## CNI support is required
+
+Creating a `NetworkPolicy` resource is only half the story. The actual
+enforcement is done by the **CNI plugin**. If your CNI doesn't support
+NetworkPolicy, the resource is silently ignored.
+
+| CNI Plugin | NetworkPolicy support |
+|-----------|----------------------|
+| `Calico` | Yes |
+| `Cilium` | Yes (plus extended policies via CiliumNetworkPolicy) |
+| `Weave Net` | Yes |
+| `Flannel` | **No** - must pair with Calico ("Canal") for policy enforcement |
+
+This is a common KCNA question. Flannel alone does not enforce
+NetworkPolicy.
+
+</LessonFrame>

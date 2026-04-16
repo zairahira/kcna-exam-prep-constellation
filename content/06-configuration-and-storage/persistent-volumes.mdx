@@ -1,0 +1,105 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="PersistentVolumes and PersistentVolumeClaims"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "The two-sided PV/PVC model and who creates each",
+    "The four access modes: RWO, ROX, RWX, RWOP",
+    "How PVCs bind to PVs and what can go wrong",
+    "PV reclaim policies: Retain vs Delete",
+  ]}
+>
+
+## The PV/PVC model
+
+Persistent storage in Kubernetes uses a **two-sided model**:
+
+- A **PersistentVolume (PV)** is a piece of cluster storage - a disk, an
+  NFS share, a cloud volume. **Cluster-scoped**. Typically admin-managed
+  (or dynamically provisioned, covered next lesson).
+- A **PersistentVolumeClaim (PVC)** is a workload&apos;s **request** for
+  storage - "I need 10 GiB, ReadWriteOnce." **Namespaced**.
+
+Kubernetes **binds** a PVC to a PV that satisfies its request. The Pod
+mounts the PVC (not the PV directly).
+
+This separation lets developers ask for storage without knowing the
+underlying infrastructure, and lets admins provision storage without
+knowing which workload will claim it.
+
+
+## Access modes
+
+A PV declares how many nodes can mount it and in which way. A PVC
+requests a compatible mode.
+
+| Mode | Short | Meaning |
+|------|-------|---------|
+| `ReadWriteOnce` | RWO | Mounted read-write by a single **node** (multiple Pods on that node OK). Most common. Cloud disks like EBS, GCP PD. |
+| `ReadOnlyMany` | ROX | Read-only, many nodes. Shared reference data. |
+| `ReadWriteMany` | RWX | Read-write, many nodes. Needs networked storage (NFS, CephFS, EFS). |
+| `ReadWriteOncePod` | RWOP | A single **Pod**. Newer, stricter than RWO. |
+
+
+## Binding lifecycle
+
+A PVC goes through states:
+
+- **Pending** - waiting for a matching PV (or for dynamic provisioning).
+- **Bound** - attached to a PV. The Pod can now mount the PVC.
+- **Lost** - the bound PV is unreachable.
+
+Common reasons a PVC stays `Pending`:
+- No PV exists that matches size + access mode + StorageClass.
+- The requested StorageClass doesn&apos;t exist.
+- The provisioner can&apos;t create the underlying storage.
+
+`kubectl describe pvc <name>` shows the events - start there.
+
+
+## Reclaim policies
+
+A PV declares what happens when its PVC is deleted:
+
+- **Retain** - PV is kept (with the data) but marked `Released`. An admin
+  must manually reclaim or delete it. Safe default for important data.
+- **Delete** - the PV and the underlying storage are deleted. Common for
+  dynamically provisioned volumes. **Your data is gone.**
+- **Recycle** - deprecated.
+
+Pick the reclaim policy based on how precious the data is.
+
+
+## Example
+
+<TerminalBlock label="pvc.yaml">
+{`apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: analytics-data
+  namespace: core
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: fast-ssd`}
+</TerminalBlock>
+
+<TerminalBlock label="pod.yaml (snippet)">
+{`spec:
+  containers:
+  - name: app
+    volumeMounts:
+    - name: data
+      mountPath: /data
+  volumes:
+  - name: data
+    persistentVolumeClaim:
+      claimName: analytics-data`}
+</TerminalBlock>
+
+</LessonFrame>

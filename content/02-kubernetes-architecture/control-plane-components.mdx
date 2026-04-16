@@ -1,0 +1,150 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Control plane components"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "The five control plane components and each one's role",
+    "kube-apiserver as the single entry point for all cluster operations",
+    "etcd as the only stateful component - the cluster's source of truth",
+    "How kube-scheduler and kube-controller-manager work together to maintain desired state",
+    "When cloud-controller-manager is used and what it does",
+  ]}
+>
+
+## Control plane overview
+
+The **control plane** runs the components that make global decisions about the
+cluster - scheduling, detecting and responding to events (like a pod crashing),
+and serving the API. In production, control plane components typically run on
+dedicated machines (often 3 or more for high availability), though in
+single-node setups like Minikube they share the same machine as worker
+components.
+
+There are five key components:
+
+
+## kube-apiserver
+
+The **API server** is the front door to the cluster. Every operation - whether
+from `kubectl`, a CI/CD pipeline, the scheduler, or a controller - goes
+through the API server.
+
+Key facts:
+
+- Exposes the **Kubernetes REST API** over HTTPS
+- Performs **authentication**, **authorisation** (RBAC), and **admission
+  control** on every request
+- Is the **only** component that reads from and writes to `etcd`
+- Is designed to scale horizontally - you can run multiple instances behind a
+  load balancer
+- All other components communicate with each other **through** the API server,
+  not directly
+
+<TerminalBlock command="kubectl get componentstatuses">
+{`NAME                 STATUS    MESSAGE   ERROR
+scheduler            Healthy   ok
+controller-manager   Healthy   ok
+etcd-0               Healthy   ok`}
+</TerminalBlock>
+
+
+## etcd
+
+`etcd` is a **distributed key-value store** that holds the entire cluster
+state - every object definition, every node's status, every configuration
+value. It is the cluster's **single source of truth**.
+
+Key facts:
+
+- Uses the **Raft consensus algorithm** for leader election and data
+  replication across nodes
+- Only the `kube-apiserver` communicates with `etcd` - no other component
+  reads or writes directly
+- Production clusters run **3 or 5** `etcd` members for fault tolerance (an
+  odd number avoids split-brain)
+- Losing `etcd` means losing the cluster state - backups are critical
+- `etcd` is a **CNCF Graduated** project
+
+| etcd detail | Value |
+|-------------|-------|
+| Data model | Key-value |
+| Consensus | Raft |
+| Recommended cluster size | 3 or 5 |
+| Who talks to it | Only `kube-apiserver` |
+| Backup tool | `etcdctl snapshot save` |
+
+
+## kube-scheduler
+
+The **scheduler** watches for newly created Pods that have no assigned node,
+then selects the best node for each one.
+
+How it works (simplified):
+
+1. A new Pod appears in the API server with `spec.nodeName` empty
+2. The scheduler **filters** nodes that don't meet requirements (not enough
+   CPU, wrong labels, taints the Pod doesn't tolerate)
+3. The scheduler **scores** the remaining nodes using priority functions (e.g.
+   prefer spreading Pods across nodes, prefer nodes with images already cached)
+4. The highest-scoring node wins, and the scheduler **binds** the Pod to that
+   node via the API server
+
+The scheduler only decides *where* - it does not start the container. That is
+the `kubelet`'s job on the chosen node.
+
+
+## kube-controller-manager
+
+The **controller manager** runs a collection of **controllers** - loops that
+watch the cluster state and take action to move the actual state toward the
+desired state.
+
+Important built-in controllers:
+
+| Controller | What it does |
+|------------|-------------|
+| **Node controller** | Monitors node health, marks nodes as unreachable, evicts Pods from dead nodes |
+| **ReplicaSet controller** | Ensures the correct number of Pod replicas are running |
+| **Deployment controller** | Manages rollouts and rollbacks of Deployments |
+| **Job controller** | Creates Pods for one-off tasks, tracks completions |
+| **ServiceAccount controller** | Creates default ServiceAccounts in new namespaces |
+| **Endpoint controller** | Populates the Endpoints object for Services |
+
+Each controller runs as a **reconciliation loop**: watch desired state, compare
+with actual state, take corrective action, repeat. They all run in a single
+binary (`kube-controller-manager`) but are logically independent.
+
+
+## cloud-controller-manager
+
+The **cloud controller manager** is an optional component that separates
+cloud-provider-specific logic from core Kubernetes logic. It only exists in
+clusters running on cloud infrastructure (AWS, GCP, Azure, etc.).
+
+It runs controllers that interact with the cloud provider's API:
+
+| Controller | What it does |
+|------------|-------------|
+| **Node controller** | Checks the cloud provider to determine if a node has been deleted |
+| **Route controller** | Sets up network routes in the cloud infrastructure |
+| **Service controller** | Creates cloud load balancers when you create a `LoadBalancer` Service |
+
+Without the cloud controller manager, Kubernetes would need cloud-specific
+code baked into its core - which would make the project harder to maintain and
+extend. This separation allows cloud providers to develop their controllers
+independently.
+
+
+## Summary table
+
+| Component | Role | Stateful? |
+|-----------|------|-----------|
+| `kube-apiserver` | API gateway, authentication, authorisation | No (state is in etcd) |
+| `etcd` | Distributed key-value store for all cluster data | **Yes** |
+| `kube-scheduler` | Assigns Pods to nodes | No |
+| `kube-controller-manager` | Runs reconciliation loops to maintain desired state | No |
+| `cloud-controller-manager` | Integrates with cloud provider APIs | No |
+
+</LessonFrame>

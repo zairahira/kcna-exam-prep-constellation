@@ -1,0 +1,204 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Imperative vs declarative"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "The difference between imperative and declarative resource management",
+    "Imperative commands: kubectl create, kubectl run, and their use cases",
+    "Declarative workflow: kubectl apply -f and why it is preferred",
+    "When each approach is appropriate in practice",
+  ]}
+>
+
+## Two ways to manage resources
+
+Kubernetes supports two fundamentally different approaches to managing
+resources:
+
+- **Imperative** - you tell Kubernetes **what to do**, step by step
+- **Declarative** - you tell Kubernetes **what you want**, and it figures out
+  how to get there
+
+This distinction shows up frequently on the KCNA exam.
+
+
+## Imperative commands
+
+Imperative commands create or modify resources directly from the command
+line, without a manifest file.
+
+### kubectl run - create a Pod
+
+<TerminalBlock command="kubectl run nginx --image=nginx:1.25 --port=80">
+{`pod/nginx created`}
+</TerminalBlock>
+
+This creates a single Pod named `nginx` running the `nginx:1.25` image.
+
+### kubectl create - create various resources
+
+<TerminalBlock command="kubectl create deployment nginx --image=nginx:1.25 --replicas=3">
+{`deployment.apps/nginx created`}
+</TerminalBlock>
+
+<TerminalBlock command="kubectl create namespace staging">
+{`namespace/staging created`}
+</TerminalBlock>
+
+<TerminalBlock command="kubectl create configmap app-config --from-literal=ENV=production">
+{`configmap/app-config created`}
+</TerminalBlock>
+
+### kubectl expose - create a Service imperatively
+
+<TerminalBlock command="kubectl expose deployment nginx --port=80 --type=ClusterIP">
+{`service/nginx exposed`}
+</TerminalBlock>
+
+### Other imperative operations
+
+<TerminalBlock command="kubectl scale deployment nginx --replicas=5">
+{`deployment.apps/nginx scaled`}
+</TerminalBlock>
+
+<TerminalBlock command="kubectl set image deployment/nginx nginx=nginx:1.26">
+{`deployment.apps/nginx image updated`}
+</TerminalBlock>
+
+These commands modify the live object directly - there is no file tracking
+the desired state.
+
+
+## Declarative management
+
+The declarative approach uses manifest files (YAML or JSON) and
+`kubectl apply`:
+
+<TerminalBlock label="deployment.yaml">
+{`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25
+        ports:
+        - containerPort: 80`}
+</TerminalBlock>
+
+<TerminalBlock command="kubectl apply -f deployment.yaml">
+{`deployment.apps/nginx created`}
+</TerminalBlock>
+
+To update, you edit the file and run `apply` again:
+
+<TerminalBlock command="kubectl apply -f deployment.yaml">
+{`deployment.apps/nginx configured`}
+</TerminalBlock>
+
+`apply` performs a **three-way merge**:
+
+1. Compares the **new manifest** (your file)
+2. Against the **last-applied configuration** (stored as an annotation on the object)
+3. And the **live state** in the cluster
+
+Only the differences are patched. Fields you did not change are left alone.
+
+
+## Why declarative is preferred
+
+| Concern | Imperative | Declarative |
+|---------|-----------|-------------|
+| **Reproducibility** | Commands are not tracked unless you script them | Manifests are files - version them in Git |
+| **Auditability** | "Who ran what command?" is hard to answer | Git history shows every change, who made it, and why |
+| **Idempotency** | `kubectl create` fails if the resource exists | `kubectl apply` creates or updates - safe to repeat |
+| **Collaboration** | Hard to share/review CLI commands | Pull requests, code review, diff visibility |
+| **GitOps compatibility** | Not compatible | The foundation of GitOps (Git = source of truth) |
+| **Drift detection** | No mechanism | Tools like Argo CD can detect and reconcile drift |
+
+The declarative model is core to how Kubernetes is designed. The entire
+control plane works by reconciling **desired state** (what you declared) with
+**actual state** (what is running). Using `kubectl apply` aligns your
+workflow with this design.
+
+
+## When imperative is still useful
+
+Imperative commands are not wrong - they have legitimate uses:
+
+### Quick one-off tasks
+
+Creating a temporary Pod for debugging:
+
+<TerminalBlock command="kubectl run debug --image=busybox --rm -it -- sh">
+{`If you don't see a command prompt, try pressing enter.
+/ #`}
+</TerminalBlock>
+
+### Generating manifest templates
+
+Use `--dry-run=client -o yaml` to generate a starting YAML file without
+actually creating anything:
+
+<TerminalBlock command="kubectl create deployment nginx --image=nginx:1.25 --dry-run=client -o yaml">
+{`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: nginx
+  name: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx:1.25
+        name: nginx
+        resources: {}
+status: {}`}
+</TerminalBlock>
+
+This is a common pattern: generate the scaffold imperatively, then manage
+it declaratively going forward.
+
+### Learning and experimenting
+
+When you are exploring Kubernetes for the first time, imperative commands
+let you try things quickly without writing YAML.
+
+
+## Summary: choosing the right approach
+
+| Situation | Use |
+|-----------|-----|
+| Production workloads | Declarative (`kubectl apply -f`) |
+| CI/CD pipelines | Declarative |
+| GitOps workflows | Declarative |
+| Quick debugging / one-off tasks | Imperative |
+| Generating YAML scaffolds | Imperative with `--dry-run=client -o yaml` |
+| Learning / experimenting | Either - imperative is faster to start |
+
+The KCNA exam expects you to know that **declarative management is the
+recommended approach** for production Kubernetes, and to understand why.
+
+</LessonFrame>

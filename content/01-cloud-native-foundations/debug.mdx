@@ -1,0 +1,67 @@
+import DebugPuzzle from "@/components/puzzle/DebugPuzzle";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-warning uppercase tracking-wide mb-1">debug challenge</p>
+  <h1 className="text-2xl font-bold">Cloud Native Foundations</h1>
+  <p className="text-fg-subtle text-sm mt-2">
+    3 challenges covering containers, images, runtimes, and architecture patterns.
+  </p>
+</header>
+
+<DebugPuzzle
+  id="m01-d1"
+  syllabusIds={["CNA-01"]}
+  prompt={<p>A team says they moved to containers so they "don&apos;t need VMs anymore." Their security team pushes back. Why might the security team have a valid concern?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "Containers share the host kernel. A kernel exploit in one container can affect others. VMs have stronger isolation via separate kernels." },
+    { id: "b", label: "Containers can't run on cloud providers - they only work on bare metal." },
+    { id: "c", label: "Container images are always larger than VM images." },
+    { id: "d", label: "Containers don't support networking, so they're inherently less secure." },
+  ]}
+  correctId="a"
+  explanation={<p>Containers share the host OS kernel. A kernel-level vulnerability can cross container boundaries. VMs run separate kernels on a hypervisor, providing hardware-level isolation. For highly sensitive workloads, VM-level isolation (or sandboxed runtimes like gVisor/Kata) may still be necessary. Containers and VMs are complementary, not mutually exclusive.</p>}
+/>
+
+<DebugPuzzle
+  id="m01-d2"
+  syllabusIds={["CNA-02"]}
+  prompt={<p>A developer builds an image on macOS. It works locally but fails on the Kubernetes cluster with <code>exec format error</code>. What&apos;s the most likely cause?</p>}
+  artifact={
+    <TerminalBlock>
+      {"exec /app/server: exec format error\n"}
+    </TerminalBlock>
+  }
+  choices={[
+    { id: "a", label: "The image was built for ARM (Apple Silicon) but the cluster nodes run x86_64 (AMD64). Architecture mismatch." },
+    { id: "b", label: "The OCI spec doesn't support images built on macOS." },
+    { id: "c", label: "The container registry rejected the push because the tag was 'latest'." },
+    { id: "d", label: "containerd can't run images built by Docker." },
+  ]}
+  correctId="a"
+  explanation={<p>Apple Silicon Macs build ARM64 images by default. If the cluster nodes are x86_64 (which most are), the binary inside the container is the wrong architecture. Fix: use <code>docker buildx build --platform linux/amd64</code> to cross-compile, or use multi-arch builds. Docker images are OCI-compatible and work on containerd - (d) is wrong.</p>}
+/>
+
+<DebugPuzzle
+  id="m01-d3"
+  syllabusIds={["CNA-03"]}
+  prompt={<p>A team using Kubernetes v1.24+ tries to run <code>docker ps</code> on a worker node to inspect running containers. The command returns nothing. Why?</p>}
+  artifact={
+    <TerminalBlock command="docker ps">
+      {"CONTAINER ID   IMAGE   COMMAND   CREATED   STATUS   PORTS   NAMES\n"}
+    </TerminalBlock>
+  }
+  choices={[
+    { id: "a", label: "Docker is the wrong tool. Kubernetes v1.24+ uses containerd (or CRI-O), not Docker. Use crictl ps instead." },
+    { id: "b", label: "docker ps only shows stopped containers. Use docker ps -a." },
+    { id: "c", label: "Kubernetes Pods are invisible to all command-line tools." },
+    { id: "d", label: "The containers are running in a different namespace and docker can't see cross-namespace containers." },
+  ]}
+  correctId="a"
+  explanation={<p>Kubernetes v1.24 removed <strong>dockershim</strong>. The runtime is now <code>containerd</code> or <code>CRI-O</code>, not Docker. <code>docker ps</code> talks to the Docker daemon, which isn&apos;t managing these containers. Use <code>crictl ps</code> (which speaks CRI) or <code>ctr</code> (containerd&apos;s CLI) to inspect containers on the node.</p>}
+/>
+
+</div>

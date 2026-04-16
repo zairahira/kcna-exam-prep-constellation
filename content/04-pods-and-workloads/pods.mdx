@@ -1,0 +1,143 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Pods"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "A Pod is the smallest deployable unit in Kubernetes - not a container",
+    "A Pod wraps one or more containers that share the same network namespace and storage volumes",
+    "Pod lifecycle phases: Pending, Running, Succeeded, Failed, Unknown",
+    "Multi-container patterns: sidecar, init container, ambassador, adapter",
+    "Pods are ephemeral - they are not rescheduled, they are replaced",
+  ]}
+>
+
+## What is a Pod?
+
+A **Pod** is the smallest deployable unit in Kubernetes. It is *not* a
+container - it is a wrapper around one or more containers that are
+scheduled together on the same node.
+
+All containers in a Pod share:
+
+- **Network namespace** - same IP address, same `localhost`, same port space
+- **Storage volumes** - any volume mounted on the Pod is accessible to all
+  its containers
+- **Lifecycle** - all containers in a Pod start together and are terminated
+  together
+
+You almost never create Pods directly in production. Instead, you use
+higher-level workload resources (Deployments, Jobs, etc.) that manage Pods
+for you. But understanding Pods is foundational.
+
+
+## Defining a Pod
+
+A minimal Pod manifest:
+
+<TerminalBlock label="pod.yaml">
+{`apiVersion: v1
+kind: Pod
+metadata:
+  name: my-app
+  labels:
+    app: my-app
+spec:
+  containers:
+    - name: web
+      image: nginx:1.25
+      ports:
+        - containerPort: 80`}
+</TerminalBlock>
+
+Create and inspect it:
+
+<TerminalBlock prompt="$" command="kubectl apply -f pod.yaml">
+{"pod/my-app created\n"}
+</TerminalBlock>
+
+<TerminalBlock prompt="$" command="kubectl get pods">
+{`NAME     READY   STATUS    RESTARTS   AGE
+my-app   1/1     Running   0          12s`}
+</TerminalBlock>
+
+
+## Pod lifecycle phases
+
+Every Pod has a `status.phase` field. The five possible values:
+
+| Phase | Meaning |
+|-------|---------|
+| `Pending` | The Pod has been accepted by the cluster but one or more containers are not yet running. Could be waiting for scheduling or image pull. |
+| `Running` | At least one container is running (or starting/restarting). |
+| `Succeeded` | All containers exited with code 0 and will not restart. Typical for Jobs. |
+| `Failed` | All containers have terminated and at least one exited with a non-zero code. |
+| `Unknown` | The Pod state cannot be determined - usually a communication failure with the node. |
+
+Check a Pod's phase:
+
+<TerminalBlock prompt="$" command="kubectl get pod my-app -o jsonpath='{.status.phase}'">
+{"Running\n"}
+</TerminalBlock>
+
+
+## Multi-container Pods
+
+Most Pods run a single container. When a Pod has more than one, the
+extra containers serve a **supporting role**. The KCNA expects you to
+recognise these patterns:
+
+### Init containers
+
+Run **before** the main container starts. They run to completion, one at a
+time, in order. Use cases: database migrations, configuration fetching,
+waiting for a dependency to be ready.
+
+<TerminalBlock label="init container snippet">
+{`spec:
+  initContainers:
+    - name: wait-for-db
+      image: busybox
+      command: ['sh', '-c', 'until nc -z db-svc 5432; do sleep 2; done']
+  containers:
+    - name: app
+      image: myapp:1.0`}
+</TerminalBlock>
+
+### Sidecar containers
+
+Run **alongside** the main container for the entire Pod lifecycle. They
+extend or enhance the main container without modifying it. Common examples:
+log shippers, service mesh proxies (Envoy), monitoring agents.
+
+### Ambassador
+
+A sidecar that **proxies network traffic** from the main container to
+external services. The main container talks to `localhost`; the ambassador
+handles service discovery, connection pooling, or protocol translation.
+
+### Adapter
+
+A sidecar that **transforms output** from the main container into a
+standard format. For example, converting a proprietary log format into JSON
+that a centralised logging system expects.
+
+
+## Pods are ephemeral
+
+This is a critical concept: Pods are **disposable**. When a Pod dies,
+Kubernetes does not resurrect it - the controller that owns it creates a
+new Pod with a new name and (potentially) a new IP.
+
+This means:
+
+- Do not store important state inside a Pod's local filesystem
+- Do not rely on a Pod's IP address for communication - use a `Service`
+- Treat every Pod as replaceable
+
+Higher-level controllers (Deployments, StatefulSets, Jobs) exist
+precisely to manage this ephemerality - creating, replacing, and scaling
+Pods on your behalf.
+
+</LessonFrame>

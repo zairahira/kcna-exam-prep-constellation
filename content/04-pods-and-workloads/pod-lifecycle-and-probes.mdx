@@ -1,0 +1,186 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Pod lifecycle and probes"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "Liveness probe: restarts the container if the check fails",
+    "Readiness probe: removes the Pod from Service endpoints if the check fails",
+    "Startup probe: disables liveness/readiness checks until the app has started",
+    "Probe types: HTTP GET, TCP socket, exec command",
+    "Restart policies: Always, OnFailure, Never",
+    "CrashLoopBackOff: what it is and what causes it",
+  ]}
+>
+
+## Why probes matter
+
+Kubernetes can tell if a container **process** is running, but it cannot
+tell if the **application** inside that process is healthy, ready to serve
+traffic, or still initialising. Probes give Kubernetes that visibility.
+
+Without probes, Kubernetes treats any running container as healthy and
+ready - which can lead to traffic being sent to broken Pods or broken
+Pods running indefinitely.
+
+
+## The three probe types
+
+### Liveness probe
+
+**"Is this container still alive?"**
+
+If the liveness probe fails, `kubelet` **kills** the container and
+restarts it (according to the Pod's restart policy). Use it to detect
+deadlocks, infinite loops, or unrecoverable states.
+
+<TerminalBlock label="liveness probe - HTTP">
+{`livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  failureThreshold: 3`}
+</TerminalBlock>
+
+This sends an HTTP GET to `/healthz` on port 8080 every 10 seconds,
+starting 5 seconds after the container starts. If 3 consecutive checks
+fail, the container is restarted.
+
+### Readiness probe
+
+**"Is this container ready to receive traffic?"**
+
+If the readiness probe fails, the Pod is removed from **Service
+endpoints** - it stops receiving traffic. The container is *not* restarted.
+Once the probe succeeds again, the Pod is re-added.
+
+Use readiness probes for temporary conditions: loading a large cache,
+waiting for a dependency, or handling a burst of work.
+
+<TerminalBlock label="readiness probe - HTTP">
+{`readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8080
+  periodSeconds: 5
+  failureThreshold: 2`}
+</TerminalBlock>
+
+### Startup probe
+
+**"Has this container finished starting up?"**
+
+The startup probe runs **before** liveness and readiness probes are
+activated. While the startup probe is running, liveness and readiness
+checks are disabled. Once the startup probe succeeds, the other probes
+take over.
+
+Use it for slow-starting applications (e.g. legacy Java apps with long
+JVM warm-up times) to prevent the liveness probe from killing the
+container before it finishes booting.
+
+<TerminalBlock label="startup probe - HTTP">
+{`startupProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  failureThreshold: 30
+  periodSeconds: 10`}
+</TerminalBlock>
+
+This gives the application up to 30 x 10 = 300 seconds to start.
+
+
+## Probe mechanisms
+
+Every probe uses one of three mechanisms:
+
+| Mechanism | How it works | Success condition |
+|-----------|-------------|-------------------|
+| `httpGet` | Sends an HTTP GET request to a path and port | Status code 200–399 |
+| `tcpSocket` | Opens a TCP connection to a port | Connection is established |
+| `exec` | Runs a command inside the container | Command exits with code 0 |
+
+<TerminalBlock label="exec probe example">
+{`livenessProbe:
+  exec:
+    command:
+      - cat
+      - /tmp/healthy
+  periodSeconds: 10`}
+</TerminalBlock>
+
+<TerminalBlock label="TCP probe example">
+{`readinessProbe:
+  tcpSocket:
+    port: 3306
+  periodSeconds: 5`}
+</TerminalBlock>
+
+
+## Probe timing parameters
+
+| Parameter | Default | Meaning |
+|-----------|---------|---------|
+| `initialDelaySeconds` | 0 | Seconds to wait before the first probe |
+| `periodSeconds` | 10 | How often to run the probe |
+| `timeoutSeconds` | 1 | How long to wait for a probe response |
+| `failureThreshold` | 3 | Consecutive failures before action is taken |
+| `successThreshold` | 1 | Consecutive successes before the probe is considered passing |
+
+
+## Restart policies
+
+The `restartPolicy` field on a Pod spec controls what happens when a
+container exits:
+
+| Policy | Behaviour | Typical use |
+|--------|-----------|-------------|
+| `Always` (default) | Restart the container regardless of exit code | Long-running services (Deployments) |
+| `OnFailure` | Restart only if exit code is non-zero | Jobs that should retry on failure |
+| `Never` | Do not restart | Jobs where you want to inspect the failed container |
+
+The restart policy applies to **all containers** in the Pod. You cannot
+set different policies for different containers within the same Pod.
+
+
+## CrashLoopBackOff
+
+`CrashLoopBackOff` is not a Pod phase - it is a **container status** that
+appears when a container keeps crashing and Kubernetes keeps restarting it.
+
+The cycle:
+
+1. Container starts
+2. Container crashes (exits with non-zero code or fails a liveness probe)
+3. Kubernetes restarts it (per the restart policy)
+4. Container crashes again
+5. Kubernetes applies an **exponential backoff** delay: 10s, 20s, 40s, 80s... up to 5 minutes
+6. The status shows `CrashLoopBackOff`
+
+<TerminalBlock prompt="$" command="kubectl get pods">
+{`NAME        READY   STATUS             RESTARTS      AGE
+broken-app  0/1     CrashLoopBackOff   5 (2m ago)    8m`}
+</TerminalBlock>
+
+Common causes:
+
+- Application error on startup (missing config, wrong database credentials)
+- Missing or incorrect `command`/`args` in the container spec
+- Insufficient resources (OOMKilled)
+- Liveness probe failing too aggressively before the app is ready (fix: add
+  a startup probe or increase `initialDelaySeconds`)
+
+To debug, check the container logs:
+
+<TerminalBlock prompt="$" command="kubectl logs broken-app --previous">
+{"Error: PGPASSWORD not set\nexit code 1\n"}
+</TerminalBlock>
+
+The `--previous` flag shows logs from the last terminated container
+instance, which is essential when the current instance has already crashed.
+
+</LessonFrame>

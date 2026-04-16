@@ -1,0 +1,144 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Taints and tolerations"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "What taints do - repel Pods from nodes",
+    "The three taint effects: NoSchedule, PreferNoSchedule, NoExecute",
+    "How tolerations allow specific Pods to schedule on tainted nodes",
+    "Common use cases: dedicated nodes, GPU nodes, control plane taints",
+  ]}
+>
+
+## The concept
+
+**Taints** are applied to **nodes**. They tell the scheduler: "do not place
+Pods here unless the Pod explicitly tolerates this taint."
+
+**Tolerations** are applied to **Pods**. They say: "I can handle this taint
+- go ahead and schedule me there."
+
+Think of it as the opposite of node affinity. Node affinity **attracts**
+Pods to nodes. Taints **repel** Pods from nodes, and tolerations are
+exceptions to that repulsion.
+
+
+## Tainting a node
+
+<TerminalBlock command="kubectl taint nodes worker-1 gpu=true:NoSchedule">
+{`node/worker-1 tainted`}
+</TerminalBlock>
+
+The taint has three parts:
+
+| Part | Example | Meaning |
+|------|---------|---------|
+| **Key** | `gpu` | A label-like identifier |
+| **Value** | `true` | Optional value (can be empty) |
+| **Effect** | `NoSchedule` | What happens to Pods that don't tolerate this taint |
+
+
+## Taint effects
+
+| Effect | Behavior |
+|--------|----------|
+| `NoSchedule` | New Pods that don't tolerate the taint **will not** be scheduled on this node. Already-running Pods are unaffected. |
+| `PreferNoSchedule` | The scheduler **tries to avoid** this node but will use it if no other option exists. Soft version of `NoSchedule`. |
+| `NoExecute` | New Pods won't be scheduled **and** existing Pods that don't tolerate the taint **are evicted**. This is the only effect that removes running Pods. |
+
+
+## Removing a taint
+
+Append a minus sign to the taint key and effect:
+
+<TerminalBlock command="kubectl taint nodes worker-1 gpu=true:NoSchedule-">
+{`node/worker-1 untainted`}
+</TerminalBlock>
+
+
+## Adding a toleration to a Pod
+
+<TerminalBlock label="pod-with-toleration.yaml">
+{`apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-job
+spec:
+  tolerations:
+  - key: "gpu"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+  containers:
+  - name: cuda
+    image: nvidia/cuda:12.0-base`}
+</TerminalBlock>
+
+This Pod says: "I tolerate the `gpu=true:NoSchedule` taint." The scheduler
+will consider tainted nodes as candidates for this Pod.
+
+### Toleration operators
+
+| Operator | Meaning |
+|----------|---------|
+| `Equal` | Key, value, and effect must all match the taint |
+| `Exists` | Key and effect must match; value is ignored. Use this when you don't care about the taint's value |
+
+### Wildcard toleration
+
+A toleration with no key and `operator: Exists` matches **all taints**:
+
+<TerminalBlock label="tolerate-everything.yaml">
+{`tolerations:
+- operator: "Exists"`}
+</TerminalBlock>
+
+This Pod can be scheduled on any node, regardless of taints. Use with
+caution - this is appropriate for cluster-wide DaemonSets (e.g.
+log collectors) that need to run everywhere.
+
+
+## NoExecute and tolerationSeconds
+
+When a `NoExecute` taint is added to a node, existing Pods that don't
+tolerate it are evicted immediately. If a Pod does tolerate it but specifies
+`tolerationSeconds`, it will be evicted after that many seconds:
+
+<TerminalBlock label="toleration-with-timeout.yaml">
+{`tolerations:
+- key: "node.kubernetes.io/unreachable"
+  operator: "Exists"
+  effect: "NoExecute"
+  tolerationSeconds: 300`}
+</TerminalBlock>
+
+This Pod will stay on an unreachable node for 300 seconds (5 minutes) before
+being evicted. This gives the node time to recover.
+
+
+## Common use cases
+
+| Use case | How it works |
+|----------|-------------|
+| **Control plane nodes** | Kubernetes automatically taints control plane nodes with `node-role.kubernetes.io/control-plane:NoSchedule`. This prevents regular workloads from running there. |
+| **GPU nodes** | Taint GPU nodes with `gpu=true:NoSchedule`. Only Pods that need GPUs add a matching toleration. |
+| **Dedicated nodes** | Taint nodes for a specific team or workload class. Only their Pods carry the toleration. |
+| **Node problems** | Kubernetes automatically adds `NoExecute` taints for conditions like `node.kubernetes.io/not-ready` and `node.kubernetes.io/unreachable`. |
+
+
+## Taints vs node affinity
+
+| | Taints + tolerations | Node affinity |
+|---|---|---|
+| Direction | Node **repels** Pods | Pod **attracts** to node |
+| Default behavior | All Pods are kept away | All nodes are candidates |
+| Applied to | Nodes (taints), Pods (tolerations) | Pods (affinity rules) |
+| Best for | Reserving nodes for specific workloads | Placing Pods on preferred nodes |
+
+In practice, you often use both together: taint a node to keep general Pods
+away, and add node affinity to the special Pods so they land on the right
+node (not just any node they happen to tolerate).
+
+</LessonFrame>

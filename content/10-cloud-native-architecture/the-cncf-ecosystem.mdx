@@ -1,0 +1,118 @@
+import LessonFrame from "@/components/LessonFrame";
+
+<LessonFrame
+  lessonTitle="The CNCF ecosystem"
+  domain="Cloud Native Architecture · 22%"
+  mustLearn={[
+    "What the CNCF is and its role in the cloud native world",
+    "CNCF governance bodies: TOC, SIGs, Working Groups",
+    "The three project maturity levels and what they signal",
+    "What the CNCF Landscape and Trail Map are",
+    "Prominent graduated projects you should recognise",
+  ]}
+>
+
+## What is the CNCF?
+
+The **Cloud Native Computing Foundation (CNCF)** is a vendor-neutral home
+for open-source cloud native projects. It sits under the **Linux
+Foundation** and hosts, governs, and promotes projects - it doesn&apos;t
+build them itself.
+
+Founded in 2015, first with Kubernetes donated by Google. Now hosts ~180
+projects and has thousands of member organisations.
+
+
+## Governance
+
+### Technical Oversight Committee (TOC)
+
+A small elected body that makes technical decisions - accepting new
+projects, approving maturity-level changes, defining cloud native.
+
+### Special Interest Groups (SIGs)
+
+Groups organised by topic - e.g. SIG Network, SIG Storage, SIG Security,
+SIG Observability. They evaluate projects in their domain and help with
+direction.
+
+### Working Groups
+
+Cross-cutting efforts on specific topics (e.g. WG Green Reviews, WG
+Environmental Sustainability).
+
+### The projects themselves
+
+Each project has its own maintainers and governance model. CNCF provides
+infrastructure and process; the project community sets direction.
+
+
+## Project maturity levels
+
+CNCF projects move through three levels:
+
+| Level | Meaning | Examples |
+|-------|---------|----------|
+| **Sandbox** | Early-stage, experimental. Low commitment from CNCF. | OpenCost, KEDA (was sandbox), etc. |
+| **Incubating** | Active development, production users, growing community. | Argo, Backstage, Knative, OpenTelemetry, Cilium |
+| **Graduated** | Mature, widely adopted, healthy community, multiple maintainers from different orgs. | Kubernetes, Prometheus, Envoy, etcd, Helm, containerd, Harbor, Argo CD, Flux, Istio |
+
+Moving up requires a TOC vote and evidence (users, maintainers, security
+audits, governance).
+
+The level is a **signal**, not a guarantee. Sandbox projects can be
+excellent; graduated ones aren&apos;t automatically the right choice for
+your use case.
+
+
+## The CNCF Landscape
+
+**`landscape.cncf.io`** is a giant map of the cloud native ecosystem -
+categorised by function (orchestration, observability, CI/CD, databases,
+networking, etc.), showing CNCF status and popularity stats.
+
+Use it when evaluating what projects exist in a given category. Expect to
+be overwhelmed on first view - there are hundreds of entries.
+
+
+## The Trail Map
+
+The **Cloud Native Trail Map** is a suggested learning/adoption path
+through the landscape:
+
+1. Containerization
+2. CI/CD
+3. Orchestration & Application Definition (Kubernetes, Helm)
+4. Observability & Analysis (Prometheus, Jaeger)
+5. Service Proxy, Discovery, Mesh (Envoy, Istio, Linkerd)
+6. Networking, Policy, Security (CNI, Open Policy Agent)
+7. Distributed Database & Storage (etcd, TiKV, Rook)
+8. Streaming & Messaging (NATS, Strimzi/Kafka)
+9. Container Registry & Runtime (Harbor, containerd)
+10. Software Distribution (Notary, TUF)
+
+It&apos;s an opinionated starting sequence for teams adopting cloud
+native - not a spec.
+
+
+## Graduated projects to recognise
+
+For the KCNA, know roughly what these graduated projects do:
+
+| Project | Category | What it does |
+|---------|----------|-------------|
+| **Kubernetes** | Orchestration | Container orchestration |
+| **Prometheus** | Observability | Metrics + alerting |
+| **Envoy** | Networking | Service proxy |
+| **etcd** | Storage | Distributed key-value store (used by K8s) |
+| **Helm** | Application Definition | Package manager for K8s |
+| **containerd** | Runtime | Container runtime |
+| **Fluentd** / **Fluent Bit** | Observability | Log collection |
+| **Jaeger** | Observability | Distributed tracing |
+| **CoreDNS** | Networking | DNS server |
+| **Harbor** | Registry | Private container registry |
+| **Argo** / **Flux** | CD | GitOps deployment |
+| **Istio**, **Linkerd** | Service mesh | Traffic control, mTLS, observability |
+| **OpenTelemetry** (Incubating) | Observability | Vendor-neutral telemetry standard |
+
+</LessonFrame>

@@ -1,0 +1,194 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Namespaces"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "What namespaces are and why they exist",
+    "The four default namespaces and their purposes",
+    "Namespaced vs cluster-scoped resources",
+    "How ResourceQuotas limit consumption per namespace",
+    "When to use namespaces and when not to",
+  ]}
+>
+
+## What is a namespace?
+
+A **namespace** is a logical partition inside a Kubernetes cluster. It
+provides a scope for names: two different namespaces can each contain a
+Service called `backend`, and they won't collide. Namespaces also serve as
+a boundary for **access control** (RBAC), **resource quotas**, and
+**network policies**.
+
+Think of namespaces like folders on a filesystem. They don't provide true
+isolation at the network or process level on their own, but they let you
+organize resources and apply policies per group.
+
+
+## Default namespaces
+
+Every cluster ships with four namespaces out of the box:
+
+| Namespace | Purpose |
+|-----------|---------|
+| `default` | Where resources go when you don't specify a namespace. Fine for experimentation, but production workloads should use explicit namespaces. |
+| `kube-system` | Kubernetes system components: `kube-apiserver`, `kube-scheduler`, `coredns`, `kube-proxy`, etc. Don't deploy your apps here. |
+| `kube-public` | Readable by all users (including unauthenticated). Typically holds a `cluster-info` ConfigMap used during bootstrapping. Rarely used otherwise. |
+| `kube-node-lease` | Holds `Lease` objects - one per node. The kubelet heartbeats by updating its Lease. This is how the control plane detects node failures efficiently. |
+
+List them yourself:
+
+<TerminalBlock command="kubectl get namespaces">
+{`NAME              STATUS   AGE
+default           Active   12d
+kube-node-lease   Active   12d
+kube-public       Active   12d
+kube-system       Active   12d`}
+</TerminalBlock>
+
+
+## Working with namespaces
+
+### Creating a namespace
+
+<TerminalBlock command="kubectl create namespace staging">
+{`namespace/staging created`}
+</TerminalBlock>
+
+Or declaratively:
+
+<TerminalBlock label="namespace.yaml">
+{`apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging`}
+</TerminalBlock>
+
+### Targeting a namespace
+
+Most `kubectl` commands accept the `-n` (or `--namespace`) flag:
+
+<TerminalBlock command="kubectl get pods -n kube-system">
+{`NAME                               READY   STATUS    RESTARTS   AGE
+coredns-5d78c9869d-abc12           1/1     Running   0          12d
+etcd-control-plane                 1/1     Running   0          12d
+kube-apiserver-control-plane       1/1     Running   0          12d`}
+</TerminalBlock>
+
+Without `-n`, kubectl defaults to the namespace set in your current
+context (usually `default`).
+
+### Changing the default namespace for your context
+
+<TerminalBlock command="kubectl config set-context --current --namespace=staging">
+{`Context "minikube" modified.`}
+</TerminalBlock>
+
+Now every command targets `staging` unless you override with `-n`.
+
+### Listing resources across all namespaces
+
+<TerminalBlock command="kubectl get pods --all-namespaces">
+{`NAMESPACE     NAME                               READY   STATUS    AGE
+default       web-abc12                          1/1     Running   2d
+kube-system   coredns-5d78c9869d-abc12           1/1     Running   12d
+staging       api-server-xyz99                   1/1     Running   1d`}
+</TerminalBlock>
+
+The short form is `-A`: `kubectl get pods -A`.
+
+
+## Namespaced vs cluster-scoped resources
+
+Not everything lives inside a namespace.
+
+| Namespaced (belong to one namespace) | Cluster-scoped (global) |
+|--------------------------------------|------------------------|
+| Pods, Services, Deployments, ConfigMaps, Secrets, PVCs, Roles, RoleBindings | Nodes, PersistentVolumes, Namespaces, ClusterRoles, ClusterRoleBindings, StorageClasses |
+
+To check whether a resource type is namespaced:
+
+<TerminalBlock command="kubectl api-resources --namespaced=true">
+{`NAME          SHORTNAMES   APIVERSION   NAMESPACED   KIND
+pods          po           v1           true         Pod
+services      svc          v1           true         Service
+deployments   deploy       apps/v1      true         Deployment
+...`}
+</TerminalBlock>
+
+<TerminalBlock command="kubectl api-resources --namespaced=false">
+{`NAME                  SHORTNAMES   APIVERSION   NAMESPACED   KIND
+nodes                 no           v1           false        Node
+persistentvolumes     pv           v1           false        PersistentVolume
+namespaces            ns           v1           false        Namespace
+...`}
+</TerminalBlock>
+
+Key exam point: `PersistentVolumes` are cluster-scoped, but
+`PersistentVolumeClaims` are namespaced. Same split for `ClusterRole` vs
+`Role`.
+
+
+## ResourceQuotas
+
+A **ResourceQuota** limits the total resources a namespace can consume. This
+prevents one team from using all the cluster's CPU, memory, or object count.
+
+<TerminalBlock label="quota.yaml">
+{`apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: team-a-quota
+  namespace: team-a
+spec:
+  hard:
+    requests.cpu: "10"
+    requests.memory: 20Gi
+    limits.cpu: "20"
+    limits.memory: 40Gi
+    pods: "50"
+    services: "10"`}
+</TerminalBlock>
+
+With this quota applied, the `team-a` namespace cannot exceed 50 Pods, 10
+Services, or the specified CPU/memory totals across all its workloads.
+
+Check current usage against the quota:
+
+<TerminalBlock command="kubectl describe resourcequota team-a-quota -n team-a">
+{`Name:            team-a-quota
+Namespace:       team-a
+Resource         Used   Hard
+--------         ----   ----
+limits.cpu       4      20
+limits.memory    8Gi    40Gi
+pods             12     50
+requests.cpu     2      10
+requests.memory  4Gi    20Gi
+services         3      10`}
+</TerminalBlock>
+
+
+## When to use namespaces
+
+**Good reasons to create namespaces:**
+
+- Separate environments: `dev`, `staging`, `production` (though separate
+  clusters are safer for production)
+- Separate teams: `team-frontend`, `team-backend`
+- Separate applications: `payments`, `notifications`
+- Apply different RBAC rules, quotas, or network policies per group
+
+**When namespaces are overkill:**
+
+- A small cluster with a handful of services and one team - `default` is
+  fine
+- When you need hard multi-tenancy (network/process isolation) - namespaces
+  alone are not enough. You need network policies, Pod security, and
+  possibly separate clusters
+
+Namespaces are a soft boundary. They organize and scope, but they don't
+provide true isolation by default.
+
+</LessonFrame>

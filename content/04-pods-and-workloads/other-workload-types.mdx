@@ -1,0 +1,194 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Other workload types"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "StatefulSet: stable network identity, stable persistent storage, ordered deployment",
+    "DaemonSet: runs exactly one Pod per node (or per matching node)",
+    "Job: runs a Pod to completion, then stops",
+    "CronJob: creates Jobs on a cron schedule",
+    "When to use each workload type",
+  ]}
+>
+
+## Beyond Deployments
+
+Deployments are the default choice for stateless applications. But not
+every workload is stateless, not every workload is long-running, and some
+workloads need to run on every node. Kubernetes provides specialised
+controllers for these cases.
+
+
+## StatefulSet
+
+A **StatefulSet** manages Pods that need **stable identity** and **stable
+persistent storage**. Each Pod gets:
+
+- A **predictable name**: `<statefulset-name>-0`, `<statefulset-name>-1`, etc.
+- A **stable hostname** via a headless Service
+- Its own **PersistentVolumeClaim** that survives Pod restarts and rescheduling
+
+| Feature | Deployment | StatefulSet |
+|---------|-----------|-------------|
+| Pod names | Random suffix (`web-6d9f-abc12`) | Ordinal index (`db-0`, `db-1`) |
+| Pod identity | Interchangeable | Sticky - each Pod is unique |
+| Storage | Shared or none | Per-Pod PersistentVolumeClaim |
+| Scaling order | All at once | Ordered (0 → 1 → 2 on scale-up, reverse on scale-down) |
+| Typical use | Stateless web apps, APIs | Databases, distributed systems (Kafka, ZooKeeper, etcd) |
+
+<TerminalBlock label="statefulset.yaml (abbreviated)">
+{`apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: postgres-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi`}
+</TerminalBlock>
+
+The `volumeClaimTemplates` field creates a unique PVC for each Pod
+(`data-postgres-0`, `data-postgres-1`, `data-postgres-2`). If
+`postgres-1` is deleted and recreated, it reattaches to the same volume.
+
+
+## DaemonSet
+
+A **DaemonSet** ensures that a copy of a Pod runs on **every node** in the
+cluster (or every node matching a selector). When a new node joins the
+cluster, the DaemonSet automatically adds a Pod. When a node is removed,
+the Pod is garbage collected.
+
+Common use cases:
+
+- **Log collectors** - Fluentd, Fluent Bit, Filebeat
+- **Monitoring agents** - Prometheus node-exporter, Datadog agent
+- **Network plugins** - CNI plugins (Calico, Cilium)
+- **Storage daemons** - CSI node drivers
+
+<TerminalBlock label="daemonset.yaml (abbreviated)">
+{`apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: log-collector
+spec:
+  selector:
+    matchLabels:
+      app: log-collector
+  template:
+    metadata:
+      labels:
+        app: log-collector
+    spec:
+      containers:
+        - name: fluent-bit
+          image: fluent/fluent-bit:latest`}
+</TerminalBlock>
+
+<TerminalBlock prompt="$" command="kubectl get daemonset log-collector">
+{`NAME            DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   AGE
+log-collector   4         4         4       4            4           2m`}
+</TerminalBlock>
+
+`DESIRED=4` means there are 4 nodes in the cluster, and each one is running
+a copy of the Pod.
+
+
+## Job
+
+A **Job** creates one or more Pods and ensures they run **to completion**.
+Once the Pod exits successfully (exit code 0), the Job is done. If a Pod
+fails, the Job creates a replacement (up to a `backoffLimit`).
+
+Key fields:
+
+| Field | Purpose |
+|-------|---------|
+| `spec.completions` | Total number of successful Pod completions required (default: 1) |
+| `spec.parallelism` | How many Pods can run simultaneously (default: 1) |
+| `spec.backoffLimit` | Number of retries before marking the Job as Failed (default: 6) |
+
+<TerminalBlock label="job.yaml">
+{`apiVersion: batch/v1
+kind: Job
+metadata:
+  name: data-import
+spec:
+  completions: 1
+  backoffLimit: 3
+  template:
+    spec:
+      containers:
+        - name: importer
+          image: myapp/importer:1.0
+          command: ["python", "import.py"]
+      restartPolicy: Never`}
+</TerminalBlock>
+
+Jobs require `restartPolicy` to be `Never` or `OnFailure` - not `Always`,
+since the Pod is meant to terminate.
+
+
+## CronJob
+
+A **CronJob** creates Jobs on a **recurring schedule**, specified in
+standard cron format. Each scheduled time triggers a new Job, which creates
+one or more Pods.
+
+<TerminalBlock label="cronjob.yaml">
+{`apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nightly-backup
+spec:
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: backup
+              image: myapp/backup:1.0
+              command: ["sh", "-c", "pg_dump mydb > /backup/dump.sql"]
+          restartPolicy: OnFailure`}
+</TerminalBlock>
+
+`"0 2 * * *"` means "every day at 2:00 AM". The CronJob manages Job
+cleanup, concurrency policy (`Allow`, `Forbid`, `Replace`), and tracking
+the last successful time.
+
+
+## Choosing the right workload
+
+| I need to... | Use |
+|-------------|-----|
+| Run a stateless web app with rolling updates | `Deployment` |
+| Run a database with stable identity and storage | `StatefulSet` |
+| Run an agent on every node | `DaemonSet` |
+| Run a task once and exit | `Job` |
+| Run a task on a recurring schedule | `CronJob` |
+
+</LessonFrame>

@@ -1,0 +1,45 @@
+{
+  "_comment": "KCNA syllabus coverage matrix. Each syllabus item MUST be covered by at least one lesson before its act ships. Keys are stable syllabus IDs referenced by lessons and puzzles. Build-time check planned (see plan guardrails).",
+  "syllabus": {
+    "K8S-F-01": {
+      "title": "Kubernetes cluster architecture",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": ["act-1/01-cluster-architecture"]
+    },
+    "K8S-F-02": {
+      "title": "Pods and workload resources",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": ["act-1/02-pods-and-workloads"]
+    },
+    "K8S-F-03": {
+      "title": "Services and networking basics",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": ["act-1/03-services-and-networking"]
+    },
+    "K8S-F-04": {
+      "title": "Namespaces, labels, selectors",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": ["act-1/04-namespaces-labels-selectors"]
+    },
+    "K8S-F-05": {
+      "title": "ConfigMaps and Secrets",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": ["act-1/05-configmaps-and-secrets"]
+    },
+    "K8S-F-06": {
+      "title": "Storage basics (Volumes, PV, PVC)",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": ["act-1/06-storage-basics"]
+    },
+    "K8S-F-07": {
+      "title": "kubectl fluency",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": ["act-1/07-kubectl-fluency"]
+    },
+    "K8S-F-08": {
+      "title": "API objects and manifests",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": ["act-1/08-api-objects-and-manifests"]
+    }
+  }
+}

@@ -1,0 +1,107 @@
+import Checkpoint from "@/components/quiz/Checkpoint";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-accent uppercase tracking-wide mb-1">quiz</p>
+  <h1 className="text-2xl font-bold">Configuration and Storage</h1>
+  <p className="text-fg-subtle text-sm mt-2">8 questions covering all lessons in this module.</p>
+</header>
+
+<Checkpoint id="m06-q1"
+  question={<>Which resource is <strong>cluster-scoped</strong> (not tied to a Namespace)?</>}
+  choices={[
+    { id: "a", label: "Pod" },
+    { id: "b", label: "ConfigMap" },
+    { id: "c", label: "PersistentVolume" },
+    { id: "d", label: "Service" },
+  ]}
+  correctId="c"
+  feedback={<p>PersistentVolumes (and Nodes, StorageClasses, ClusterRoles) are cluster-scoped. Pods, ConfigMaps, and Services are namespaced.</p>}
+/>
+
+<Checkpoint id="m06-q2"
+  question={<>Which selector matches labels <code>{`env=prod, tier=backend, app=billing`}</code>?</>}
+  choices={[
+    { id: "a", label: "env=staging,tier=backend" },
+    { id: "b", label: "env=prod,tier=frontend" },
+    { id: "c", label: "env=prod,tier in (frontend,backend)" },
+    { id: "d", label: "env=dev" },
+  ]}
+  correctId="c"
+  feedback={<p>Commas are AND. You need <code>env=prod</code> (match) AND <code>tier</code> in <code>{`{frontend, backend}`}</code> (backend matches). Extra labels like <code>app=billing</code> don&apos;t disqualify a match.</p>}
+/>
+
+<Checkpoint id="m06-q3"
+  question={<>Secrets are stored in etcd how, by default?</>}
+  choices={[
+    { id: "a", label: "AES-256 encrypted" },
+    { id: "b", label: "Base64-encoded (not encrypted)" },
+    { id: "c", label: "Plaintext" },
+    { id: "d", label: "Hashed with SHA-256" },
+  ]}
+  correctId="b"
+  feedback={<p>Base64 is encoding, not encryption - anyone with etcd read access can decode. For real at-rest protection, enable etcd encryption providers (AES-CBC, AES-GCM, KMS).</p>}
+/>
+
+<Checkpoint id="m06-q4"
+  question={<>A ConfigMap is consumed via env vars. You update the ConfigMap. When does a running Pod see the new values?</>}
+  choices={[
+    { id: "a", label: "Immediately" },
+    { id: "b", label: "After ~60 seconds" },
+    { id: "c", label: "Only after the Pod is restarted" },
+    { id: "d", label: "Never - env vars are baked into the image" },
+  ]}
+  correctId="c"
+  feedback={<p>Env vars from ConfigMaps are resolved once at Pod start. To pick up changes, restart the Pods (e.g., <code>kubectl rollout restart deployment</code>). Volume-mounted ConfigMaps do eventually refresh.</p>}
+/>
+
+<Checkpoint id="m06-q5"
+  question={<>You write data to an <code>emptyDir</code> volume. The Pod is deleted and rescheduled on a different node. What happens to the data?</>}
+  choices={[
+    { id: "a", label: "It's automatically migrated." },
+    { id: "b", label: "Gone. emptyDir lives only for the Pod's lifetime on its node." },
+    { id: "c", label: "Copied to an automatic backup PV." },
+    { id: "d", label: "Retained until cluster GC runs." },
+  ]}
+  correctId="b"
+  feedback={<p>emptyDir is Pod-scoped. Delete the Pod → delete the volume. For persistence across Pod lifecycle, use a PVC backed by a PV.</p>}
+/>
+
+<Checkpoint id="m06-q6"
+  question={<>An RWO access mode allows the PV to be mounted by:</>}
+  choices={[
+    { id: "a", label: "One Pod only" },
+    { id: "b", label: "Multiple Pods on a single node" },
+    { id: "c", label: "Multiple Pods across multiple nodes" },
+    { id: "d", label: "Only the controller plane" },
+  ]}
+  correctId="b"
+  feedback={<p>RWO (ReadWriteOnce) is scoped to a <strong>node</strong>: multiple Pods on that same node can mount the volume. For a strict single-Pod bound, use RWOP (ReadWriteOncePod).</p>}
+/>
+
+<Checkpoint id="m06-q7"
+  question={<>A PVC is <code>Pending</code> and <code>kubectl describe pvc</code> shows no matching PV. Which is NOT a likely cause?</>}
+  choices={[
+    { id: "a", label: "No PV matches the requested size and access mode" },
+    { id: "b", label: "The requested StorageClass doesn't exist" },
+    { id: "c", label: "The dynamic provisioner is failing" },
+    { id: "d", label: "PVCs require a running Pod to bind" },
+  ]}
+  correctId="d"
+  feedback={<p>PVCs bind as soon as a matching PV is available (immediate binding) - a Pod isn&apos;t needed for basic binding. The exception is <code>WaitForFirstConsumer</code> binding mode, which <em>does</em> defer provisioning until a Pod is scheduled, but that&apos;s a deliberate mode, not an error.</p>}
+/>
+
+<Checkpoint id="m06-q8"
+  question={<>What does the Container Storage Interface (CSI) let you do?</>}
+  choices={[
+    { id: "a", label: "Pass storage configuration between containers in a Pod" },
+    { id: "b", label: "Plug any compatible storage system into Kubernetes without modifying core" },
+    { id: "c", label: "Automatically scale PV sizes" },
+    { id: "d", label: "Encrypt container filesystems" },
+  ]}
+  correctId="b"
+  feedback={<p>CSI is the standard API that third-party storage systems implement to integrate with Kubernetes. It replaced the older in-tree volume plugins and FlexVolumes.</p>}
+/>
+
+</div>

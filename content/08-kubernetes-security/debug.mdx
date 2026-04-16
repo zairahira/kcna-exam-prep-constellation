@@ -1,0 +1,51 @@
+import DebugPuzzle from "@/components/puzzle/DebugPuzzle";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-warning uppercase tracking-wide mb-1">debug challenge</p>
+  <h1 className="text-2xl font-bold">Kubernetes Security</h1>
+  <p className="text-fg-subtle text-sm mt-2">3 challenges covering RBAC, ServiceAccounts, and admission.</p>
+</header>
+
+<DebugPuzzle id="m08-d1" syllabusIds={["CO-SEC"]}
+  prompt={<p>A Pod running as ServiceAccount <code>analytics-ingest</code> tries to list Pods and gets "Forbidden". What's the first thing to check?</p>}
+  artifact={<TerminalBlock>{"Error from server (Forbidden): pods is forbidden:\nUser \"system:serviceaccount:analytics:analytics-ingest\" cannot list resource \"pods\"\n"}</TerminalBlock>}
+  choices={[
+    { id: "a", label: "Check whether any Role/RoleBinding (or ClusterRole/ClusterRoleBinding) grants 'list pods' to that ServiceAccount in the analytics namespace." },
+    { id: "b", label: "Restart the Pod." },
+    { id: "c", label: "The ServiceAccount is malformed." },
+    { id: "d", label: "kubectl auth can-i doesn't work on ServiceAccounts." },
+  ]}
+  correctId="a"
+  explanation={<p>By default, ServiceAccounts have no permissions. The error clearly states which subject and which verb/resource was denied. Fix: create or adjust a RoleBinding that grants <code>list pods</code> to <code>system:serviceaccount:analytics:analytics-ingest</code>. Verify with <code>kubectl auth can-i list pods --as=system:serviceaccount:analytics:analytics-ingest -n analytics</code>.</p>}
+/>
+
+<DebugPuzzle id="m08-d2" syllabusIds={["CO-SEC"]}
+  prompt={<p>A namespace is labeled <code>pod-security.kubernetes.io/enforce=restricted</code>. A Pod tries to apply with <code>runAsUser: 0</code>. What happens?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "The Pod is rejected at admission - restricted forbids running as root." },
+    { id: "b", label: "The Pod is admitted but flagged for audit." },
+    { id: "c", label: "runAsUser is silently overridden to 1000." },
+    { id: "d", label: "The label has no effect - PSA requires a separate controller install." },
+  ]}
+  correctId="a"
+  explanation={<p>Pod Security Admission is built in. The <code>restricted</code> level disallows running as root (<code>runAsNonRoot: true</code> is required). In <code>enforce</code> mode, violating Pods are rejected at admission. <code>audit</code> and <code>warn</code> modes log/warn but allow.</p>}
+/>
+
+<DebugPuzzle id="m08-d3" syllabusIds={["CO-SEC"]}
+  prompt={<p>A Pod runs fine locally but fails on a hardened cluster because it "can&apos;t bind to port 80". Why?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "Ports below 1024 require the NET_BIND_SERVICE capability. If the Pod dropped all capabilities, binding to 80 fails. Either add NET_BIND_SERVICE or expose the app on a port above 1024 and map it via a Service." },
+    { id: "b", label: "Kubernetes reserves port 80 for Ingress." },
+    { id: "c", label: "Only LoadBalancer Services can use port 80." },
+    { id: "d", label: "PSA blocks all ports below 8080." },
+  ]}
+  correctId="a"
+  explanation={<p>Binding to privileged ports (&lt;1024) needs the <code>NET_BIND_SERVICE</code> capability. Hardened Pods that drop all capabilities lose this. Best practice is to have the app listen on a high port (e.g. 8080) and let a Service front it on 80.</p>}
+/>
+
+</div>

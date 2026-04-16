@@ -1,0 +1,100 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Volumes and ephemeral storage"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "The difference between container filesystems and Pod volumes",
+    "What an emptyDir volume is and when to use it",
+    "How ConfigMaps and Secrets are mounted as volumes",
+    "What the downwardAPI volume exposes",
+    "Why hostPath is discouraged",
+  ]}
+>
+
+## Container filesystem vs. Pod volumes
+
+Every container has its own writable filesystem layer on top of its image.
+That layer is **ephemeral**: when the container restarts, the layer is
+wiped. Anything the app wrote to disk is gone.
+
+If you need data to survive a restart (or to be shared between containers
+in the same Pod), you declare a **volume** on the Pod and mount it into
+one or more containers.
+
+This lesson covers **ephemeral volumes** - those scoped to the Pod
+lifetime. The next lesson covers persistent storage.
+
+
+## `emptyDir`
+
+An `emptyDir` volume is a scratch directory created when the Pod is
+assigned to a node. It lives for the Pod&apos;s lifetime and is deleted
+when the Pod is removed.
+
+<TerminalBlock label="pod.yaml">
+{`spec:
+  containers:
+  - name: app
+    image: myapp
+    volumeMounts:
+    - name: cache
+      mountPath: /var/cache/app
+  volumes:
+  - name: cache
+    emptyDir: {}`}
+</TerminalBlock>
+
+Use cases:
+- Caches that can be rebuilt on restart
+- Scratch space for temporary files
+- A shared directory between containers in the same Pod
+
+By default `emptyDir` lives on node disk. You can request memory-backed
+(<code>emptyDir: medium: Memory</code>) for a tmpfs-style ramdisk.
+
+
+## `configMap` and `secret` volumes
+
+Instead of consuming a ConfigMap or Secret via env vars, you can mount it
+as a directory where each key becomes a file.
+
+<TerminalBlock label="pod.yaml">
+{`spec:
+  containers:
+  - name: app
+    volumeMounts:
+    - name: config
+      mountPath: /etc/app
+      readOnly: true
+  volumes:
+  - name: config
+    configMap:
+      name: app-config`}
+</TerminalBlock>
+
+Unlike env-var consumption, mounted ConfigMaps/Secrets **eventually update**
+when the underlying object changes (kubelet resyncs every minute or so).
+The application still has to re-read the files to notice.
+
+
+## `downwardAPI`
+
+The downward API exposes Pod metadata (name, namespace, labels,
+annotations, resource limits) as files or env vars inside the container.
+Useful when an app needs to know its own name or namespace without
+hardcoding it.
+
+
+## `hostPath` - discouraged
+
+A `hostPath` volume mounts a file or directory from the **node** into the
+container. This ties the Pod to a specific node&apos;s filesystem and
+punches holes in the container isolation model.
+
+Avoid it for workloads. It&apos;s only appropriate for system-level
+components (log collectors, node exporters) that explicitly need node
+access.
+
+</LessonFrame>

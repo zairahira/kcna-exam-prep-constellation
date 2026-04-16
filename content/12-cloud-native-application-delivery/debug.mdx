@@ -1,0 +1,51 @@
+import DebugPuzzle from "@/components/puzzle/DebugPuzzle";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-warning uppercase tracking-wide mb-1">debug challenge</p>
+  <h1 className="text-2xl font-bold">Cloud Native Application Delivery</h1>
+  <p className="text-fg-subtle text-sm mt-2">3 challenges covering CI/CD, GitOps, and packaging.</p>
+</header>
+
+<DebugPuzzle id="m12-d1" syllabusIds={["CNAD-CICD"]}
+  prompt={<p>A team runs <code>kubectl apply</code> directly from a CI pipeline against production and also has Argo CD watching the same Git repo. Occasionally changes applied via CI get reverted minutes later. Why?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "Argo CD is reconciling - it sees the cluster drifted from Git and is applying Git state back, effectively reverting the direct kubectl apply. Pick one workflow: either push from CI or pull from Git (GitOps), not both." },
+    { id: "b", label: "kubectl apply is rate-limited." },
+    { id: "c", label: "Argo CD has a bug." },
+    { id: "d", label: "The cluster API server is misconfigured." },
+  ]}
+  correctId="a"
+  explanation={<p>GitOps controllers continuously reconcile cluster state toward Git. A direct <code>kubectl apply</code> from CI looks like drift, and Argo CD reverts it on its next sync. Fix: make Git the source of truth - the CI pipeline commits to Git, Argo CD applies. Or disable auto-sync and accept the trade-off.</p>}
+/>
+
+<DebugPuzzle id="m12-d2" syllabusIds={["CNAD-GITOPS"]}
+  prompt={<p>A new engineer wants to "roll back" a GitOps-managed Deployment that was just released. What's the canonical way?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "SSH into the master node and manually edit the resources." },
+    { id: "b", label: "git revert the commit that released the new version, then push. The GitOps controller sees the rollback commit and applies it." },
+    { id: "c", label: "kubectl rollout undo - it's the only way." },
+    { id: "d", label: "Delete the Deployment and recreate it." },
+  ]}
+  correctId="b"
+  explanation={<p>Under GitOps, the cluster reflects Git. To roll back, you revert in Git - and the controller does the work. <code>git revert</code> creates a new commit undoing the old one, preserving history. You could also move a tag the controller is pinned to. Using <code>kubectl rollout undo</code> directly would be "drift" that GitOps would roll forward again.</p>}
+/>
+
+<DebugPuzzle id="m12-d3" syllabusIds={["CNAD-PKG"]}
+  prompt={<p>A team needs to deploy the exact same application with slightly different values to 4 environments. They want no template syntax cluttering the manifests. Which tool fits best?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "Helm - powerful templating handles any case." },
+    { id: "b", label: "Kustomize - base + overlays give per-environment patches without any template syntax. Plain YAML." },
+    { id: "c", label: "Ansible." },
+    { id: "d", label: "Each environment gets a separate copy of the manifests." },
+  ]}
+  correctId="b"
+  explanation={<p>Kustomize is built exactly for this. Base manifests stay pure YAML; each overlay directory patches them for its environment. No Go templates, clean diffs. Helm would also work but requires accepting template syntax throughout.</p>}
+/>
+
+</div>

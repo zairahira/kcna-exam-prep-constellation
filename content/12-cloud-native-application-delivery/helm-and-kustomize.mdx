@@ -1,0 +1,135 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Helm and Kustomize"
+  domain="Cloud Native Application Delivery · 8%"
+  mustLearn={[
+    "The problem both tools solve - managing manifest variation across environments",
+    "What Helm is: charts, values, releases",
+    "What Kustomize is: bases and overlays, strategic merge patching",
+    "When to use which (and when to combine)",
+  ]}
+>
+
+## The problem
+
+Raw Kubernetes manifests duplicate quickly. The same Deployment in
+dev/staging/prod differs in:
+
+- Image tags
+- Replica counts
+- Resource requests
+- Environment-specific config
+
+Copy-pasting manifests invites drift. **Helm** and **Kustomize** are the
+two dominant ways to manage this variation.
+
+
+## Helm
+
+**Helm** (CNCF Graduated) is the package manager for Kubernetes. It
+bundles manifests into **charts** with templates and values.
+
+### Key concepts
+
+- **Chart** - a package. A directory with templates + metadata +
+  default values. Versioned, signable, shareable.
+- **Template** - a manifest with Go template placeholders.
+- **Values (`values.yaml`)** - configurable parameters. Overridable at
+  install time.
+- **Release** - an installation of a chart with specific values.
+  Versioned in the cluster.
+- **Repository** - where charts live (Artifact Hub, your own HTTP
+  server, an OCI registry).
+
+### Example usage
+
+<TerminalBlock>
+{`# Install a chart from a repo\nhelm repo add bitnami https://charts.bitnami.com/bitnami\nhelm install my-redis bitnami/redis -n data --values prod-values.yaml\n\n# Upgrade to new values\nhelm upgrade my-redis bitnami/redis -n data --values prod-values.yaml\n\n# Rollback to previous revision\nhelm rollback my-redis 1 -n data\n\n# Uninstall\nhelm uninstall my-redis -n data`}
+</TerminalBlock>
+
+### Strengths
+
+- Package abstraction is familiar (apt, npm, cargo).
+- Massive ecosystem of community charts on **Artifact Hub**.
+- Rich templating for complex manifests.
+- Release lifecycle management (install / upgrade / rollback).
+
+### Trade-offs
+
+- Go templates on YAML can get ugly fast - whitespace, escaping.
+- Debugging "why did that field render that value" requires
+  `helm template` + diffing.
+- The abstraction has opinions; custom deploys can fight them.
+
+
+## Kustomize
+
+**Kustomize** is an overlay system. No templates - you have a **base**
+set of manifests and apply **overlays** that patch them.
+
+### Key concepts
+
+- **Base** - a directory of plain manifests.
+- **Overlay** - a directory that references a base and a set of patches.
+- **kustomization.yaml** - the manifest that ties together resources +
+  patches + generators.
+- **Strategic merge patch** / **JSON patch** - two ways to describe
+  modifications.
+
+### Example structure
+
+<pre className="cc-card p-4 text-sm my-4 overflow-x-auto">{`app/
+├── base/
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   └── kustomization.yaml
+├── overlays/
+│   ├── staging/
+│   │   ├── kustomization.yaml  # refs ../../base + patches
+│   │   └── replicas-patch.yaml
+│   └── prod/
+│       ├── kustomization.yaml
+│       └── resources-patch.yaml`}</pre>
+
+<TerminalBlock>
+{`# Render and apply\nkubectl apply -k overlays/prod\n\n# Or just render\nkubectl kustomize overlays/prod`}
+</TerminalBlock>
+
+Kustomize is **built into kubectl** (`-k` flag). No separate install.
+
+### Strengths
+
+- No templates - just YAML. Diffs are clean.
+- Base + overlay makes dev/staging/prod layering natural.
+- Easier mental model for simple cases.
+
+### Trade-offs
+
+- Not a package manager. You don&apos;t distribute "kustomize packages"
+  the way you distribute Helm charts.
+- Less powerful than Helm for deeply dynamic manifests.
+
+
+## Comparison
+
+| | Helm | Kustomize |
+|---|------|-----------|
+| Packaging | Yes, shareable charts + repos | No |
+| Customisation | Go templates + values | Overlays + patches |
+| Release lifecycle | Yes (install/upgrade/rollback) | No (stateless - apply and go) |
+| Ecosystem | Huge (Artifact Hub) | Growing but smaller |
+| Learning curve | Moderate - templates can surprise | Gentle for simple cases |
+
+
+## Using them together
+
+Common pattern: use Helm to consume third-party charts (like cert-manager,
+ingress-nginx, Prometheus) - their upstream packages are Helm charts -
+and Kustomize for your own in-house services where you want simpler
+YAML.
+
+Both Argo CD and Flux support Helm and Kustomize natively as sources.
+
+</LessonFrame>

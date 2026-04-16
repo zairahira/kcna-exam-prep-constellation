@@ -1,0 +1,150 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="The declarative model"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "Desired state vs actual state - the foundation of the Kubernetes model",
+    "Controllers watch resources and reconcile actual state to match desired state",
+    "Self-healing: Kubernetes automatically corrects drift",
+    "Idempotency: applying the same manifest repeatedly produces the same result",
+  ]}
+>
+
+## Desired state vs actual state
+
+The entire Kubernetes system is built on one core idea:
+
+> You declare **what you want** (desired state), and controllers
+> continuously work to **make it so** (actual state).
+
+When you write a manifest that says `replicas: 3`, you are not saying
+"create 3 Pods right now." You are saying "the desired state is 3
+running Pods." The system then figures out what actions to take - create
+Pods, reschedule them, restart crashed ones - to maintain that state
+over time.
+
+This is fundamentally different from the imperative approach where you
+issue commands like "create a Pod" or "scale to 3." In the declarative
+model, you describe the **end state** and let the system handle the
+**how**.
+
+
+## Controllers and the reconcile loop
+
+**Controllers** are the engine behind the declarative model. Every
+built-in resource type has a controller (or set of controllers) watching
+it:
+
+| Controller | Watches | Reconciles |
+|-----------|---------|------------|
+| Deployment controller | Deployment objects | Creates/updates ReplicaSets to match the desired template and replicas |
+| ReplicaSet controller | ReplicaSet objects | Creates/deletes Pods to match the desired replica count |
+| Service controller | Service objects | Configures load balancer endpoints |
+| Node controller | Node objects | Detects unhealthy nodes and evicts Pods |
+| Job controller | Job objects | Runs Pods to completion |
+
+Each controller runs a **reconcile loop**:
+
+1. **Watch** - subscribe to changes on the relevant API objects.
+2. **Compare** - check if the actual state matches the desired state.
+3. **Act** - if there is a difference, take corrective action.
+4. **Repeat** - continuously.
+
+This loop runs constantly. It is not a one-time operation.
+
+
+## Self-healing in action
+
+Suppose you have a Deployment with `replicas: 3` and all 3 Pods are
+running. Then one Pod crashes. Here is what happens:
+
+<TerminalBlock command="kubectl get pods">
+{`NAME                     READY   STATUS    RESTARTS   AGE
+nginx-7c5ddbdf54-abc12   1/1     Running   0          1h
+nginx-7c5ddbdf54-def34   1/1     Running   0          1h
+nginx-7c5ddbdf54-ghi56   0/1     Error     0          1h`}
+</TerminalBlock>
+
+The ReplicaSet controller detects that the actual count of healthy Pods
+is 2, but the desired count is 3. It creates a replacement:
+
+<TerminalBlock command="kubectl get pods" label="a few seconds later">
+{`NAME                     READY   STATUS    RESTARTS   AGE
+nginx-7c5ddbdf54-abc12   1/1     Running   0          1h
+nginx-7c5ddbdf54-def34   1/1     Running   0          1h
+nginx-7c5ddbdf54-jkl78   1/1     Running   0          5s`}
+</TerminalBlock>
+
+No human intervention required. The system **healed itself** by
+reconciling actual state back to desired state. This also works for:
+
+- A node going down (Pods are rescheduled to healthy nodes).
+- Someone manually deleting a Pod (a new one is created).
+- A container failing its health check (it is restarted or replaced).
+
+
+## Idempotency
+
+A key property of the declarative model is **idempotency**: applying the
+same manifest multiple times produces the **same result** as applying it
+once.
+
+<TerminalBlock command="kubectl apply -f deployment.yaml">
+{`deployment.apps/nginx-deployment configured`}
+</TerminalBlock>
+
+<TerminalBlock command="kubectl apply -f deployment.yaml">
+{`deployment.apps/nginx-deployment unchanged`}
+</TerminalBlock>
+
+The second `apply` does nothing because the desired state already matches
+what is stored. This is safe and expected. You can run `kubectl apply`
+in a CI/CD pipeline on every commit without worrying about duplicate
+resources or side effects.
+
+Compare this with imperative commands:
+
+<TerminalBlock command="kubectl create deployment nginx --image=nginx:1.27">
+{`deployment.apps/nginx created`}
+</TerminalBlock>
+
+<TerminalBlock command="kubectl create deployment nginx --image=nginx:1.27">
+{`Error from server (AlreadyExists): deployments.apps "nginx" already exists`}
+</TerminalBlock>
+
+The imperative `create` fails on the second run. It is **not**
+idempotent. This is one reason declarative is preferred for production
+workflows.
+
+
+## Why the declarative model matters
+
+| Benefit | Explanation |
+|---------|-------------|
+| **Self-healing** | Controllers detect and correct drift automatically |
+| **Idempotency** | Safe to re-apply - no duplicate resources, no errors |
+| **Version control** | Manifests are plain text files that live in Git |
+| **Auditability** | Git history shows who changed what and when |
+| **GitOps** | The Git repo becomes the single source of truth for cluster state |
+| **Composability** | Multiple controllers can watch and act on different aspects of the same object |
+
+The declarative model is what makes Kubernetes more than just a container
+runner. It is a **control plane** - a system that continuously drives
+reality toward a declared intent.
+
+
+## The control loop pattern everywhere
+
+This pattern is not unique to Kubernetes - it comes from control theory
+(think of a thermostat). But Kubernetes applies it universally:
+
+- Built-in controllers reconcile built-in resources.
+- Operators (custom controllers) reconcile custom resources.
+- GitOps tools (Argo CD, Flux) reconcile Git repos against the cluster.
+
+Every layer uses the same principle: declare desired state, watch actual
+state, reconcile the difference.
+
+</LessonFrame>

@@ -1,0 +1,52 @@
+import Remember from "@/components/Remember";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-fg-subtle uppercase tracking-wide mb-1">review</p>
+  <h1 className="text-2xl font-bold">Scheduling and Autoscaling</h1>
+  <p className="text-fg-subtle text-sm mt-2">Key facts from all lessons in this module.</p>
+</header>
+
+<Remember
+  points={[
+    <>The scheduler&apos;s job: pick a node for each unscheduled Pod. Two phases - <strong>filtering</strong> (eliminate unsuitable nodes) and <strong>scoring</strong> (rank the survivors). Best score wins.</>,
+    <>After scoring, the scheduler <strong>binds</strong> the Pod to the chosen node (updates <code>spec.nodeName</code>). Kubelet on that node takes over.</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <><strong>nodeSelector</strong>: simplest form - match exact node labels.</>,
+    <><strong>nodeAffinity</strong>: more expressive. <code>requiredDuringScheduling</code> (hard) or <code>preferredDuringScheduling</code> (soft).</>,
+    <><strong>podAffinity</strong> / <strong>podAntiAffinity</strong>: schedule near (or away from) other Pods based on labels. Useful for co-locating replicas or spreading them.</>,
+    <><strong>topologySpreadConstraints</strong>: distribute Pods evenly across topology domains (zones, nodes).</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <><strong>Taints</strong> are applied to nodes - they repel Pods that don&apos;t tolerate them.</>,
+    <>Taint effects: <code>NoSchedule</code> (block scheduling), <code>PreferNoSchedule</code> (avoid if possible), <code>NoExecute</code> (evict existing Pods too).</>,
+    <><strong>Tolerations</strong> on Pods let them land on tainted nodes. Pattern: dedicate nodes for GPU/spot/security workloads.</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <><strong>Requests</strong>: minimum resources the Pod needs. Used for <em>scheduling</em>.</>,
+    <><strong>Limits</strong>: maximum the Pod may use. Enforced by the kernel - exceeding memory limit → <code>OOMKilled</code>.</>,
+    <>QoS classes (inferred from requests/limits): <strong>Guaranteed</strong> (req=limit for all), <strong>Burstable</strong> (req &lt; limit), <strong>BestEffort</strong> (no req/limit set). Higher QoS = less likely to be evicted.</>,
+  ]}
+/>
+
+<Remember
+  points={[
+    <><strong>HPA</strong> (Horizontal Pod Autoscaler): adds/removes Pods based on metrics (CPU, memory, custom). Needs metrics-server.</>,
+    <><strong>VPA</strong> (Vertical Pod Autoscaler): adjusts Pod requests/limits - typically recreates Pods to apply. Not built-in; add-on.</>,
+    <><strong>Cluster Autoscaler</strong>: adds/removes <em>nodes</em> based on pending Pods and node utilization. Cloud-provider integrated.</>,
+    <><strong>KEDA</strong> (CNCF Graduated): event-driven autoscaling (queue depth, stream lag, external metrics). Layers on top of HPA.</>,
+  ]}
+/>
+
+</div>

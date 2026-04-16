@@ -1,0 +1,184 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Introduction to kubectl"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "What kubectl is and its role in the Kubernetes ecosystem",
+    "How to install kubectl and verify the installation",
+    "The kubeconfig file structure: clusters, users, and contexts",
+    "How to switch contexts and check the current context",
+  ]}
+>
+
+## What is kubectl?
+
+`kubectl` (pronounced "kube-control", "kube-C-T-L", or "kube-cuddle" - all
+are accepted) is the **command-line tool for interacting with Kubernetes
+clusters**. It is the primary way administrators and developers communicate
+with the Kubernetes API server.
+
+Every time you run a `kubectl` command, it:
+
+1. Reads your **kubeconfig** file to find the target cluster and credentials
+2. Constructs an **HTTP request** to the Kubernetes API server
+3. Sends the request (typically over HTTPS on port 6443)
+4. Receives and formats the **response** for you
+
+`kubectl` does not run on the cluster itself - it runs on **your machine**
+(or a bastion host, CI runner, etc.) and talks to the cluster remotely.
+
+
+## Installing kubectl
+
+`kubectl` is a standalone binary. It does not require Docker, a container
+runtime, or any cluster to be installed - it is just an API client.
+
+### Common installation methods
+
+| Method | Command |
+|--------|---------|
+| macOS (Homebrew) | `brew install kubectl` |
+| Linux (curl) | Download binary from `dl.k8s.io`, make executable |
+| Windows (Chocolatey) | `choco install kubernetes-cli` |
+| Comes bundled with | Docker Desktop, minikube, cloud provider CLIs |
+
+After installing, verify it works:
+
+<TerminalBlock command="kubectl version --client">
+{`Client Version: v1.31.0
+Kustomize Version: v5.4.2`}
+</TerminalBlock>
+
+The `--client` flag checks only the local binary - you do not need a cluster
+connection for this command.
+
+
+## The kubeconfig file
+
+`kubectl` needs to know **where** to connect and **how** to authenticate.
+This information lives in a **kubeconfig** file, located by default at
+`~/.kube/config`.
+
+A kubeconfig file has three main sections:
+
+### 1. Clusters
+
+Each entry defines a cluster endpoint and its certificate authority:
+
+<TerminalBlock label="~/.kube/config (clusters section)">
+{`clusters:
+- cluster:
+    server: https://192.168.49.2:8443
+    certificate-authority: /home/user/.minikube/ca.crt
+  name: minikube
+- cluster:
+    server: https://dev-cluster.example.com:6443
+    certificate-authority-data: LS0tLS1CRUd...
+  name: dev-cluster`}
+</TerminalBlock>
+
+### 2. Users
+
+Each entry defines credentials (client cert, token, or auth provider):
+
+<TerminalBlock label="~/.kube/config (users section)">
+{`users:
+- name: minikube-user
+  user:
+    client-certificate: /home/user/.minikube/profiles/minikube/client.crt
+    client-key: /home/user/.minikube/profiles/minikube/client.key
+- name: dev-admin
+  user:
+    token: eyJhbGciOiJSUzI1NiIs...`}
+</TerminalBlock>
+
+### 3. Contexts
+
+A **context** binds a cluster + a user + an optional namespace into a named
+shortcut. This is what you actually switch between day-to-day:
+
+<TerminalBlock label="~/.kube/config (contexts section)">
+{`contexts:
+- context:
+    cluster: minikube
+    user: minikube-user
+    namespace: default
+  name: minikube
+- context:
+    cluster: dev-cluster
+    user: dev-admin
+    namespace: backend
+  name: dev-backend`}
+</TerminalBlock>
+
+Think of it this way:
+
+| Piece | Answers the question |
+|-------|---------------------|
+| Cluster | **Where** am I connecting? |
+| User | **Who** am I? |
+| Context | Cluster + User + Namespace bundled together |
+
+
+## Working with contexts
+
+### Check your current context
+
+<TerminalBlock command="kubectl config current-context">
+{`minikube`}
+</TerminalBlock>
+
+### List all available contexts
+
+<TerminalBlock command="kubectl config get-contexts">
+{`CURRENT   NAME          CLUSTER       AUTHINFO       NAMESPACE
+*         minikube      minikube      minikube-user  default
+          dev-backend   dev-cluster   dev-admin      backend`}
+</TerminalBlock>
+
+The `*` marks the active context.
+
+### Switch to a different context
+
+<TerminalBlock command="kubectl config use-context dev-backend">
+{`Switched to context "dev-backend".`}
+</TerminalBlock>
+
+From this point, every `kubectl` command targets `dev-cluster` as the user
+`dev-admin` in the `backend` namespace - until you switch again.
+
+
+## The KUBECONFIG environment variable
+
+By default, kubectl reads `~/.kube/config`. You can override this with the
+`KUBECONFIG` environment variable:
+
+<TerminalBlock command="export KUBECONFIG=/path/to/custom-config">
+{``}
+</TerminalBlock>
+
+You can also merge multiple config files by separating paths with a colon:
+
+<TerminalBlock command="export KUBECONFIG=~/.kube/config:~/.kube/dev-config">
+{``}
+</TerminalBlock>
+
+This is useful when managing multiple clusters across different teams or
+environments.
+
+
+## Quick connectivity check
+
+Once your kubeconfig is set up, confirm you can reach the cluster:
+
+<TerminalBlock command="kubectl cluster-info">
+{`Kubernetes control plane is running at https://192.168.49.2:8443
+CoreDNS is running at https://192.168.49.2:8443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy`}
+</TerminalBlock>
+
+If this works, kubectl is installed, configured, and can communicate with
+your cluster. You are ready to start running commands.
+
+</LessonFrame>

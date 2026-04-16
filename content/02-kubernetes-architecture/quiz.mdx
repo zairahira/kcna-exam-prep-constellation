@@ -1,0 +1,117 @@
+import Checkpoint from "@/components/quiz/Checkpoint";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-accent uppercase tracking-wide mb-1">quiz</p>
+  <h1 className="text-2xl font-bold">Kubernetes Architecture</h1>
+  <p className="text-fg-subtle text-sm mt-2">
+    8 questions covering all lessons in this module.
+  </p>
+</header>
+
+<Checkpoint
+  id="m02-q1"
+  question={<>Which of the following is <strong>not</strong> something Kubernetes provides out of the box?</>}
+  choices={[
+    { id: "a", label: "Self-healing (restart failed containers)" },
+    { id: "b", label: "Service discovery and load balancing" },
+    { id: "c", label: "CI/CD pipelines for building and testing code" },
+    { id: "d", label: "Automated rollouts and rollbacks" },
+  ]}
+  correctId="c"
+  feedback={<p>Kubernetes does not include CI/CD pipelines. You need external tools like Jenkins, GitHub Actions, Argo Workflows, or Tekton. Kubernetes handles scheduling, self-healing, scaling, service discovery, rollouts, and storage orchestration - but not building or testing code.</p>}
+/>
+
+<Checkpoint
+  id="m02-q2"
+  question={<>Which control plane component is the <strong>only</strong> one that reads from and writes to <code>etcd</code>?</>}
+  choices={[
+    { id: "a", label: "kube-scheduler" },
+    { id: "b", label: "kube-controller-manager" },
+    { id: "c", label: "kube-apiserver" },
+    { id: "d", label: "kubelet" },
+  ]}
+  correctId="c"
+  feedback={<p>The <code>kube-apiserver</code> is the sole component that communicates with <code>etcd</code>. All other components - scheduler, controller manager, kubelet - interact with cluster state exclusively through the API server. This centralises access control and prevents data corruption.</p>}
+/>
+
+<Checkpoint
+  id="m02-q3"
+  question={<>What consensus algorithm does <code>etcd</code> use to replicate data across its members?</>}
+  choices={[
+    { id: "a", label: "Paxos" },
+    { id: "b", label: "Raft" },
+    { id: "c", label: "Two-phase commit" },
+    { id: "d", label: "Gossip protocol" },
+  ]}
+  correctId="b"
+  feedback={<p><code>etcd</code> uses the <strong>Raft</strong> consensus algorithm for leader election and log replication. Raft ensures that a majority of members agree on every write before it is committed, providing strong consistency. Production clusters typically run 3 or 5 etcd members.</p>}
+/>
+
+<Checkpoint
+  id="m02-q4"
+  question={<>The kube-scheduler has assigned a Pod to a node. Which component is responsible for actually starting the container?</>}
+  choices={[
+    { id: "a", label: "kube-scheduler" },
+    { id: "b", label: "kube-controller-manager" },
+    { id: "c", label: "kubelet" },
+    { id: "d", label: "kube-proxy" },
+  ]}
+  correctId="c"
+  feedback={<p>The scheduler only decides <em>where</em> a Pod runs by setting <code>spec.nodeName</code>. The <code>kubelet</code> on the chosen node watches for this assignment, pulls the container image via the container runtime (CRI), and starts the container. The scheduler never starts containers itself.</p>}
+/>
+
+<Checkpoint
+  id="m02-q5"
+  question={<>How does <code>kube-proxy</code> route traffic to Pods in its default <code>iptables</code> mode?</>}
+  choices={[
+    { id: "a", label: "It runs a userspace proxy that forwards each packet" },
+    { id: "b", label: "It writes iptables rules in the kernel so traffic is forwarded directly - no userspace proxy" },
+    { id: "c", label: "It updates DNS records to point Service names to Pod IPs" },
+    { id: "d", label: "It creates a dedicated network tunnel between every pair of Pods" },
+  ]}
+  correctId="b"
+  feedback={<p>In <code>iptables</code> mode (the default), <code>kube-proxy</code> programs iptables rules in the Linux kernel. The kernel handles packet forwarding directly - traffic goes from client to Pod without passing through a userspace process. This is efficient and avoids the overhead of proxying every packet.</p>}
+/>
+
+<Checkpoint
+  id="m02-q6"
+  question={<>What mechanism do Kubernetes components use to receive real-time updates from the API server without polling?</>}
+  choices={[
+    { id: "a", label: "Periodic HTTP GET requests on a timer" },
+    { id: "b", label: "A watch - a long-lived HTTP connection that streams events as they happen" },
+    { id: "c", label: "WebSocket connections managed by etcd" },
+    { id: "d", label: "gRPC bidirectional streaming directly to etcd" },
+  ]}
+  correctId="b"
+  feedback={<p>Components open a <strong>watch</strong> request to the API server - a long-lived HTTP connection. When a resource changes, the API server pushes an event to all watchers immediately. This event-driven design is what makes Kubernetes reactive. Components typically use <strong>informers</strong> that maintain a local cache updated via watches.</p>}
+/>
+
+<Checkpoint
+  id="m02-q7"
+  question={<>Why do <code>kube-scheduler</code> and <code>kube-controller-manager</code> use leader election in HA setups?</>}
+  choices={[
+    { id: "a", label: "To distribute work evenly across all replicas for better throughput" },
+    { id: "b", label: "To ensure only one instance is actively processing at a time, preventing conflicting decisions" },
+    { id: "c", label: "To allow each replica to manage a different subset of namespaces" },
+    { id: "d", label: "To synchronise their in-memory caches with etcd" },
+  ]}
+  correctId="b"
+  feedback={<p>Leader election ensures <strong>exactly one active instance</strong> at a time. If two schedulers tried to schedule the same Pod, you would get conflicts. The leader acquires a Lease object in the API server; standby replicas wait. If the leader fails, a standby takes over. This prevents split-brain while providing high availability.</p>}
+/>
+
+<Checkpoint
+  id="m02-q8"
+  question={<>The <code>kubelet</code> does not run as a container. Why?</>}
+  choices={[
+    { id: "a", label: "Container images for kubelet don't exist" },
+    { id: "b", label: "It needs to manage the container runtime and node-level resources - it can't depend on the thing it manages" },
+    { id: "c", label: "Kubernetes only supports Go binaries running as system processes" },
+    { id: "d", label: "The API server rejects registration from containerised kubelets" },
+  ]}
+  correctId="b"
+  feedback={<p>The <code>kubelet</code> is responsible for managing containers on the node - pulling images, starting/stopping containers, running health checks. If the kubelet itself ran as a container, it would depend on the container runtime it is supposed to manage. A failure in the runtime would take down the kubelet too, leaving the node unmanageable. It runs as a <code>systemd</code> service instead.</p>}
+/>
+
+</div>

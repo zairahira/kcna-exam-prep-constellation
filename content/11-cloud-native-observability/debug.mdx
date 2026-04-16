@@ -1,0 +1,51 @@
+import DebugPuzzle from "@/components/puzzle/DebugPuzzle";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-warning uppercase tracking-wide mb-1">debug challenge</p>
+  <h1 className="text-2xl font-bold">Cloud Native Observability</h1>
+  <p className="text-fg-subtle text-sm mt-2">3 challenges covering metrics, logs, and traces.</p>
+</header>
+
+<DebugPuzzle id="m11-d1" syllabusIds={["OBS-METRICS"]}
+  prompt={<p>You want to count the total number of HTTP requests your service has served since it started. Which Prometheus metric type?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "Counter - monotonically increasing. Rate-over-time is derived in PromQL with rate() or increase()." },
+    { id: "b", label: "Gauge - a single value that goes up or down." },
+    { id: "c", label: "Histogram - for distributions like latency." },
+    { id: "d", label: "Summary - for client-side quantiles." },
+  ]}
+  correctId="a"
+  explanation={<p>A counter is for monotonically increasing values. You rarely read the raw counter; you read rates over time windows (<code>rate(http_requests_total[5m])</code>). Gauges are for values that go both up and down (queue depth, memory). Histograms for distributions.</p>}
+/>
+
+<DebugPuzzle id="m11-d2" syllabusIds={["OBS-LOGS"]}
+  prompt={<p>A Pod writes application logs to <code>/var/log/myapp.log</code> inside the container. kubectl logs shows nothing. Why?</p>}
+  artifact={<TerminalBlock command="kubectl logs analytics-api-7b9d8">{"\n"}</TerminalBlock>}
+  choices={[
+    { id: "a", label: "kubectl logs reads only what the container wrote to stdout/stderr. Logs to a file inside the container aren't captured. The Twelve-Factor way is to log to stdout; if the app really must log to a file, use a sidecar to tail it to stdout." },
+    { id: "b", label: "Logs take 10 minutes to propagate." },
+    { id: "c", label: "You need --from-file=/var/log/myapp.log." },
+    { id: "d", label: "kubectl logs requires RBAC on Secrets." },
+  ]}
+  correctId="a"
+  explanation={<p>Container logs in Kubernetes = whatever the container wrote to stdout/stderr. Internal log files are invisible to <code>kubectl logs</code> and to node-level log collectors (Fluentd/Fluent Bit). Fix: configure the app to write to stdout, or run a sidecar that tails the file to stdout.</p>}
+/>
+
+<DebugPuzzle id="m11-d3" syllabusIds={["OBS-TRACE"]}
+  prompt={<p>A request goes through 5 microservices. Traces for each individual service show up in Jaeger, but they're all separate traces - not stitched together. What's the most likely cause?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "Context propagation isn't happening. Each service is starting its own trace instead of continuing the parent trace via the traceparent header (or equivalent). Check the HTTP client instrumentation on each service." },
+    { id: "b", label: "Jaeger only supports single-service traces." },
+    { id: "c", label: "You need to merge traces manually in the UI." },
+    { id: "d", label: "The OpenTelemetry collector is down." },
+  ]}
+  correctId="a"
+  explanation={<p>For distributed traces, every service must propagate the trace context to downstream calls - usually via the W3C <code>traceparent</code> header. If a service starts a new trace instead of continuing the parent, you get disconnected traces. OpenTelemetry&apos;s auto-instrumentation handles this for common HTTP clients, but custom transports or a gap in instrumentation can break the chain.</p>}
+/>
+
+</div>

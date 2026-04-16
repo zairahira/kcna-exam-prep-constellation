@@ -1,0 +1,255 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Core commands"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "kubectl get - listing resources with common variations",
+    "kubectl describe - inspecting a resource in detail",
+    "kubectl logs and kubectl exec - debugging running containers",
+    "kubectl apply and kubectl delete - managing resources",
+  ]}
+>
+
+## The general syntax
+
+Every kubectl command follows this pattern:
+
+<TerminalBlock label="kubectl command structure">
+{`kubectl [command] [resource-type] [resource-name] [flags]`}
+</TerminalBlock>
+
+For example: `kubectl get pods my-pod -n production`
+
+- **command** - what action to take (`get`, `describe`, `delete`, etc.)
+- **resource-type** - what kind of object (`pods`, `services`, `deployments`, etc.)
+- **resource-name** - optional; omit it to target all resources of that type
+- **flags** - optional modifiers (`-n`, `-o`, `-l`, etc.)
+
+
+## kubectl get
+
+`get` lists one or more resources. It is the command you will use most often.
+
+### List all Pods in the current namespace
+
+<TerminalBlock command="kubectl get pods">
+{`NAME                     READY   STATUS    RESTARTS   AGE
+nginx-7c5ddbdf54-k2xqp   1/1     Running   0          12m
+redis-master-0            1/1     Running   0          45m`}
+</TerminalBlock>
+
+### List a specific resource by name
+
+<TerminalBlock command="kubectl get pod nginx-7c5ddbdf54-k2xqp">
+{`NAME                     READY   STATUS    RESTARTS   AGE
+nginx-7c5ddbdf54-k2xqp   1/1     Running   0          12m`}
+</TerminalBlock>
+
+### List other resource types
+
+<TerminalBlock command="kubectl get services">
+{`NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP   3d
+nginx-svc    ClusterIP   10.96.142.87    <none>        80/TCP    12m`}
+</TerminalBlock>
+
+<TerminalBlock command="kubectl get deployments">
+{`NAME    READY   UP-TO-DATE   AVAILABLE   AGE
+nginx   1/1     1            1           12m`}
+</TerminalBlock>
+
+Common resource types: `pods` (or `po`), `services` (or `svc`),
+`deployments` (or `deploy`), `nodes` (or `no`), `namespaces` (or `ns`),
+`configmaps` (or `cm`), `secrets`.
+
+
+## kubectl describe
+
+`describe` shows **detailed information** about a specific resource,
+including events, conditions, and configuration. It is your go-to when
+something is not working.
+
+<TerminalBlock command="kubectl describe pod nginx-7c5ddbdf54-k2xqp">
+{`Name:             nginx-7c5ddbdf54-k2xqp
+Namespace:        default
+Node:             minikube/192.168.49.2
+Status:           Running
+IP:               10.244.0.5
+Containers:
+  nginx:
+    Image:          nginx:1.25
+    Port:           80/TCP
+    State:          Running
+      Started:      Mon, 14 Apr 2026 09:00:00 +0000
+    Ready:          True
+    Restart Count:  0
+Conditions:
+  Type              Status
+  Initialized       True
+  Ready             True
+  ContainersReady   True
+  PodScheduled      True
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  12m   default-scheduler  Successfully assigned default/nginx-7c5ddbdf54-k2xqp to minikube
+  Normal  Pulled     12m   kubelet            Container image "nginx:1.25" already present on machine
+  Normal  Created    12m   kubelet            Created container nginx
+  Normal  Started    12m   kubelet            Started container nginx`}
+</TerminalBlock>
+
+The **Events** section at the bottom is especially important for
+troubleshooting. It tells you what Kubernetes did (or tried to do) and in
+what order.
+
+### get vs describe
+
+| | `kubectl get` | `kubectl describe` |
+|---|---|---|
+| Purpose | Quick overview / list | Deep inspection of one resource |
+| Output | Table (one line per resource) | Multi-section detailed report |
+| Events shown | No | Yes |
+| When to use | "Is it running?" | "Why isn't it running?" |
+
+
+## kubectl logs
+
+`logs` shows the **stdout/stderr output** from a container. This is how you
+read application logs.
+
+<TerminalBlock command="kubectl logs nginx-7c5ddbdf54-k2xqp">
+{`172.17.0.1 - - [14/Apr/2026:09:05:23 +0000] "GET / HTTP/1.1" 200 615 "-" "curl/7.88.1"
+172.17.0.1 - - [14/Apr/2026:09:05:25 +0000] "GET /favicon.ico HTTP/1.1" 404 153 "-" "curl/7.88.1"`}
+</TerminalBlock>
+
+### Follow logs in real time
+
+<TerminalBlock command="kubectl logs -f nginx-7c5ddbdf54-k2xqp">
+{`(streams new log lines as they arrive - press Ctrl+C to stop)`}
+</TerminalBlock>
+
+### Logs from a specific container in a multi-container Pod
+
+<TerminalBlock command="kubectl logs my-pod -c sidecar">
+{`(shows logs from the container named "sidecar")`}
+</TerminalBlock>
+
+### Logs from a previous container instance
+
+If a container crashed and was restarted, you can read the previous
+instance's logs:
+
+<TerminalBlock command="kubectl logs nginx-7c5ddbdf54-k2xqp --previous">
+{`(shows logs from the container before it restarted)`}
+</TerminalBlock>
+
+
+## kubectl exec
+
+`exec` runs a command **inside a running container**. This is useful for
+interactive debugging.
+
+### Run a single command
+
+<TerminalBlock command="kubectl exec nginx-7c5ddbdf54-k2xqp -- cat /etc/nginx/nginx.conf">
+{`user  nginx;
+worker_processes  auto;
+error_log  /var/log/nginx/error.log notice;
+...`}
+</TerminalBlock>
+
+The `--` separates kubectl flags from the command to run inside the
+container.
+
+### Open an interactive shell
+
+<TerminalBlock command="kubectl exec -it nginx-7c5ddbdf54-k2xqp -- /bin/sh">
+{`# (you are now inside the container)`}
+</TerminalBlock>
+
+`-i` = interactive (keep stdin open), `-t` = allocate a TTY. Together,
+they give you a shell session.
+
+
+## kubectl apply
+
+`apply` creates or updates resources from a **YAML or JSON manifest file**.
+This is the standard way to manage resources declaratively.
+
+<TerminalBlock label="deployment.yaml">
+{`apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25
+        ports:
+        - containerPort: 80`}
+</TerminalBlock>
+
+<TerminalBlock command="kubectl apply -f deployment.yaml">
+{`deployment.apps/nginx created`}
+</TerminalBlock>
+
+If you run the same command again after editing the file, `apply` performs a
+**three-way merge**: it compares the new manifest, the last-applied manifest,
+and the live state, then patches only what changed.
+
+<TerminalBlock command="kubectl apply -f deployment.yaml">
+{`deployment.apps/nginx configured`}
+</TerminalBlock>
+
+Notice the output changes from `created` to `configured`.
+
+
+## kubectl delete
+
+`delete` removes resources from the cluster.
+
+### Delete by name
+
+<TerminalBlock command="kubectl delete pod nginx-7c5ddbdf54-k2xqp">
+{`pod "nginx-7c5ddbdf54-k2xqp" deleted`}
+</TerminalBlock>
+
+### Delete using a manifest file
+
+<TerminalBlock command="kubectl delete -f deployment.yaml">
+{`deployment.apps/nginx deleted`}
+</TerminalBlock>
+
+This removes everything defined in the file - a clean way to tear down what
+you applied.
+
+### A note about Pods managed by Deployments
+
+If you delete a Pod that belongs to a Deployment, the Deployment's
+ReplicaSet will immediately create a **replacement Pod**. To actually
+remove the workload, delete the Deployment itself, not individual Pods.
+
+
+## Command summary
+
+| Command | Purpose | Example |
+|---------|---------|---------|
+| `get` | List resources | `kubectl get pods` |
+| `describe` | Detailed info + events | `kubectl describe pod my-pod` |
+| `logs` | Container stdout/stderr | `kubectl logs my-pod` |
+| `exec` | Run command in container | `kubectl exec my-pod -- ls /app` |
+| `apply` | Create/update from manifest | `kubectl apply -f file.yaml` |
+| `delete` | Remove resources | `kubectl delete deployment nginx` |
+
+</LessonFrame>

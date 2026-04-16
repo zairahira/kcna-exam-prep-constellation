@@ -1,0 +1,107 @@
+import Checkpoint from "@/components/quiz/Checkpoint";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-accent uppercase tracking-wide mb-1">quiz</p>
+  <h1 className="text-2xl font-bold">The Kubernetes API and Extensibility</h1>
+  <p className="text-fg-subtle text-sm mt-2">8 questions covering all lessons in this module.</p>
+</header>
+
+<Checkpoint id="m09-q1"
+  question={<>Every Kubernetes object has which four top-level fields?</>}
+  choices={[
+    { id: "a", label: "apiVersion, kind, name, type" },
+    { id: "b", label: "apiVersion, kind, metadata, spec" },
+    { id: "c", label: "id, name, status, data" },
+    { id: "d", label: "group, version, kind, name" },
+  ]}
+  correctId="b"
+  feedback={<p><code>apiVersion</code>, <code>kind</code>, <code>metadata</code>, <code>spec</code> - plus <code>status</code> which is read-only for users.</p>}
+/>
+
+<Checkpoint id="m09-q2"
+  question={<>Which field describes the user's <strong>intent</strong>?</>}
+  choices={[
+    { id: "a", label: "metadata" },
+    { id: "b", label: "spec" },
+    { id: "c", label: "status" },
+    { id: "d", label: "kind" },
+  ]}
+  correctId="b"
+  feedback={<p><code>spec</code> is desired state (what the user wants). <code>status</code> is observed state (what the control plane sees). Controllers drive status toward spec.</p>}
+/>
+
+<Checkpoint id="m09-q3"
+  question={<>Which apiVersion is correct for a Deployment?</>}
+  choices={[
+    { id: "a", label: "v1" },
+    { id: "b", label: "apps/v1" },
+    { id: "c", label: "batch/v1" },
+    { id: "d", label: "networking.k8s.io/v1" },
+  ]}
+  correctId="b"
+  feedback={<p>Deployments, StatefulSets, DaemonSets, and ReplicaSets live in the <code>apps/v1</code> group. Core resources (Pods, Services) use the unversioned <code>v1</code>.</p>}
+/>
+
+<Checkpoint id="m09-q4"
+  question={<>An API version labeled <code>v1beta2</code> means:</>}
+  choices={[
+    { id: "a", label: "Fully stable, ready for production, no breaking changes" },
+    { id: "b", label: "Beta stage - mostly stable but may have breaking changes between versions" },
+    { id: "c", label: "Deprecated and scheduled for removal" },
+    { id: "d", label: "Private/internal API" },
+  ]}
+  correctId="b"
+  feedback={<p>Beta APIs are mostly stable and suitable for evaluation; breaking changes are possible between beta versions. Alpha APIs are experimental. Stable <code>v1</code> APIs have strong backward-compatibility guarantees.</p>}
+/>
+
+<Checkpoint id="m09-q5"
+  question={<>A CustomResourceDefinition alone, without a controller:</>}
+  choices={[
+    { id: "a", label: "Automatically creates workloads" },
+    { id: "b", label: "Is just metadata - CR objects can be created but nothing acts on them" },
+    { id: "c", label: "Breaks the cluster" },
+    { id: "d", label: "Substitutes for a Deployment" },
+  ]}
+  correctId="b"
+  feedback={<p>A CRD defines a new API type. Without a controller watching and reconciling the custom resources, they&apos;re inert. CRD + controller = <strong>operator</strong>.</p>}
+/>
+
+<Checkpoint id="m09-q6"
+  question={<>Which is an example of an operator?</>}
+  choices={[
+    { id: "a", label: "kubectl" },
+    { id: "b", label: "cert-manager" },
+    { id: "c", label: "containerd" },
+    { id: "d", label: "CoreDNS" },
+  ]}
+  correctId="b"
+  feedback={<p>cert-manager introduces CRDs (Certificate, Issuer, etc.) and runs a controller that issues and renews TLS certs. Classic operator.</p>}
+/>
+
+<Checkpoint id="m09-q7"
+  question={<>The reconcile loop is said to be "idempotent." This means:</>}
+  choices={[
+    { id: "a", label: "It runs only once per object" },
+    { id: "b", label: "Running it repeatedly with the same input produces the same result, safely" },
+    { id: "c", label: "It automatically undoes itself" },
+    { id: "d", label: "It can only create, not update" },
+  ]}
+  correctId="b"
+  feedback={<p>Idempotent = repeatable without side effects. The controller can re-observe, re-decide, and re-act continuously; if reality already matches desired state, nothing happens.</p>}
+/>
+
+<Checkpoint id="m09-q8"
+  question={<>Who writes to the <code>status</code> field of a Kubernetes object?</>}
+  choices={[
+    { id: "a", label: "The user, via kubectl apply" },
+    { id: "b", label: "The control plane / responsible controller" },
+    { id: "c", label: "The kubelet only" },
+    { id: "d", label: "Nothing - status is read-only forever" },
+  ]}
+  correctId="b"
+  feedback={<p>Controllers (and the API server&apos;s subresources) write status. Users should not write status - it&apos;ll get overwritten. You write spec; Kubernetes writes status.</p>}
+/>
+
+</div>

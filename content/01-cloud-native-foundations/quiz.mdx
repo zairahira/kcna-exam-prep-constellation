@@ -1,0 +1,117 @@
+import Checkpoint from "@/components/quiz/Checkpoint";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-accent uppercase tracking-wide mb-1">quiz</p>
+  <h1 className="text-2xl font-bold">Cloud Native Foundations</h1>
+  <p className="text-fg-subtle text-sm mt-2">
+    8 questions covering all lessons in this module.
+  </p>
+</header>
+
+<Checkpoint
+  id="m01-q1"
+  question={<>Which of the following is <strong>not</strong> one of the four pillars of cloud native?</>}
+  choices={[
+    { id: "a", label: "Containers" },
+    { id: "b", label: "Microservices" },
+    { id: "c", label: "Virtual machines" },
+    { id: "d", label: "Declarative APIs" },
+  ]}
+  correctId="c"
+  feedback={<p>The four pillars are containers, microservices, CI/CD, and declarative APIs. Virtual machines are a valid infrastructure choice but not a cloud native pillar.</p>}
+/>
+
+<Checkpoint
+  id="m01-q2"
+  question={<>A CNCF project at the <code>Graduated</code> maturity level is considered:</>}
+  choices={[
+    { id: "a", label: "Experimental - not ready for production" },
+    { id: "b", label: "Production-ready and widely adopted" },
+    { id: "c", label: "Deprecated and scheduled for removal" },
+    { id: "d", label: "Only usable with Kubernetes" },
+  ]}
+  correctId="b"
+  feedback={<p>Graduated projects (like Kubernetes, Prometheus, Envoy, containerd) are production-ready and have demonstrated broad adoption and a healthy community.</p>}
+/>
+
+<Checkpoint
+  id="m01-q3"
+  question={<>What is the primary difference between containers and VMs?</>}
+  choices={[
+    { id: "a", label: "Containers run their own kernel; VMs share the host kernel" },
+    { id: "b", label: "Containers share the host kernel; VMs run their own kernel via a hypervisor" },
+    { id: "c", label: "Containers can only run Linux; VMs can run any OS" },
+    { id: "d", label: "There is no meaningful difference - containers are just smaller VMs" },
+  ]}
+  correctId="b"
+  feedback={<p>Containers use OS-level isolation (namespaces/cgroups) and share the host kernel. VMs run a full guest OS with its own kernel on a hypervisor. This makes containers lighter and faster to start, but VMs provide stronger isolation.</p>}
+/>
+
+<Checkpoint
+  id="m01-q4"
+  question={<>What does the OCI (Open Container Initiative) define?</>}
+  choices={[
+    { id: "a", label: "A specific container runtime implementation" },
+    { id: "b", label: "Open standards for container image format and runtime specification" },
+    { id: "c", label: "The Kubernetes API specification" },
+    { id: "d", label: "A cloud provider certification program" },
+  ]}
+  correctId="b"
+  feedback={<p>The OCI defines the Image Spec (how images are structured) and the Runtime Spec (how containers are created/run). This ensures portability: images built by one tool run on any compliant runtime.</p>}
+/>
+
+<Checkpoint
+  id="m01-q5"
+  question={<>Why was <code>dockershim</code> removed from Kubernetes in v1.24?</>}
+  choices={[
+    { id: "a", label: "Docker images are no longer compatible with Kubernetes" },
+    { id: "b", label: "Kubernetes adopted CRI as the standard runtime interface; dockershim was a compatibility shim that added maintenance burden" },
+    { id: "c", label: "Docker was acquired by a competitor of the CNCF" },
+    { id: "d", label: "containerd cannot run Docker-format images" },
+  ]}
+  correctId="b"
+  feedback={<p>CRI (Container Runtime Interface) is the standard way kubelet talks to runtimes. dockershim was a Kubernetes-maintained adapter to Docker that added complexity. Removing it simplifies Kubernetes. Docker images (which are OCI-compliant) still work on containerd and CRI-O.</p>}
+/>
+
+<Checkpoint
+  id="m01-q6"
+  question={<>Which container runtime is the most widely used in managed Kubernetes services (EKS, GKE, AKS)?</>}
+  choices={[
+    { id: "a", label: "Docker" },
+    { id: "b", label: "CRI-O" },
+    { id: "c", label: "containerd" },
+    { id: "d", label: "runc" },
+  ]}
+  correctId="c"
+  feedback={<p><code>containerd</code> is the default high-level runtime in EKS, GKE, and AKS. <code>runc</code> is the low-level runtime that containerd delegates to - it doesn&apos;t manage images or networking. CRI-O is common in OpenShift but not in the major managed services.</p>}
+/>
+
+<Checkpoint
+  id="m01-q7"
+  question={<>When should you consider decomposing a monolith into microservices?</>}
+  choices={[
+    { id: "a", label: "Always - microservices are strictly better than monoliths" },
+    { id: "b", label: "When the team is small and moving fast on a new product" },
+    { id: "c", label: "When team coordination overhead is high, deploys are risky, and different parts have different scaling needs" },
+    { id: "d", label: "Only when using Kubernetes" },
+  ]}
+  correctId="c"
+  feedback={<p>Microservices add operational complexity. They pay off when the monolith's problems (risky deploys, team coupling, can't scale parts independently) outweigh that complexity. Starting monolith and decomposing later is a common, well-regarded pattern.</p>}
+/>
+
+<Checkpoint
+  id="m01-q8"
+  question={<>Which communication pattern between microservices <strong>reduces coupling</strong> the most?</>}
+  choices={[
+    { id: "a", label: "Synchronous REST calls" },
+    { id: "b", label: "Synchronous gRPC calls" },
+    { id: "c", label: "Asynchronous event streaming (e.g. Kafka, NATS)" },
+    { id: "d", label: "Direct database access between services" },
+  ]}
+  correctId="c"
+  feedback={<p>Async patterns (event streaming, message queues) decouple services: the sender publishes without waiting for or knowing about the receiver. Sync calls (REST, gRPC) couple the caller to the callee&apos;s availability. Direct DB access between services is an antipattern - it breaks service boundaries.</p>}
+/>
+
+</div>

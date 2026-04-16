@@ -1,0 +1,157 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="API groups and versioning"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "The core API group (v1) and named API groups (apps/v1, batch/v1, etc.)",
+    "The version lifecycle: v1alpha1 → v1beta1 → v1",
+    "What each maturity level (alpha, beta, stable) means",
+    "The Kubernetes API deprecation policy",
+  ]}
+>
+
+## Why API groups exist
+
+Kubernetes has hundreds of resource types. Rather than putting them all
+in one flat namespace, the API is organized into **groups**. This allows
+different teams to evolve different parts of the API independently, and
+lets new features be introduced without breaking stable resources.
+
+The `apiVersion` field in every manifest tells the API server which group
+and version to use.
+
+
+## The core group
+
+The **core group** (also called the legacy group) has no group name - its
+`apiVersion` is just the version string:
+
+| apiVersion | Resources |
+|------------|-----------|
+| `v1` | `Pod`, `Service`, `ConfigMap`, `Secret`, `Namespace`, `Node`, `PersistentVolume`, `PersistentVolumeClaim`, `ServiceAccount` |
+
+These are the oldest and most fundamental resources. Their REST path is
+`/api/v1/...` (note: `/api`, not `/apis`).
+
+
+## Named groups
+
+Everything added after the initial core resources lives in a **named
+group**. The `apiVersion` is `group/version`:
+
+| apiVersion | Resources |
+|------------|-----------|
+| `apps/v1` | `Deployment`, `ReplicaSet`, `StatefulSet`, `DaemonSet` |
+| `batch/v1` | `Job`, `CronJob` |
+| `networking.k8s.io/v1` | `Ingress`, `IngressClass`, `NetworkPolicy` |
+| `rbac.authorization.k8s.io/v1` | `Role`, `ClusterRole`, `RoleBinding`, `ClusterRoleBinding` |
+| `storage.k8s.io/v1` | `StorageClass`, `CSIDriver`, `CSINode` |
+| `autoscaling/v2` | `HorizontalPodAutoscaler` |
+| `policy/v1` | `PodDisruptionBudget` |
+
+Named groups use the REST path `/apis/{group}/{version}/...`.
+
+
+## Discovering API groups
+
+You can list all API groups available in your cluster:
+
+<TerminalBlock command="kubectl api-versions">
+{`admissionregistration.k8s.io/v1
+apps/v1
+autoscaling/v2
+batch/v1
+certificates.k8s.io/v1
+networking.k8s.io/v1
+rbac.authorization.k8s.io/v1
+storage.k8s.io/v1
+v1
+...`}
+</TerminalBlock>
+
+To see which resources belong to a specific group:
+
+<TerminalBlock command="kubectl api-resources --api-group=apps">
+{`NAME           SHORTNAMES   APIVERSION   NAMESPACED   KIND
+daemonsets     ds           apps/v1      true         DaemonSet
+deployments    deploy       apps/v1      true         Deployment
+replicasets    rs           apps/v1      true         ReplicaSet
+statefulsets   sts          apps/v1      true         StatefulSet`}
+</TerminalBlock>
+
+
+## Version lifecycle
+
+API versions follow a maturity progression:
+
+### v1alpha1 - Alpha
+
+- **Not enabled by default** - requires a feature gate.
+- May change or be removed without notice.
+- Do not use in production.
+- Purpose: early experimentation and feedback.
+
+### v1beta1 - Beta
+
+- **Enabled by default** (since K8s 1.24, new beta APIs are not
+  auto-enabled, but older ones are).
+- The feature is well-tested but the API may still change.
+- Migration path will be provided if it changes.
+- Safe for non-critical use.
+
+### v1 - Stable (GA)
+
+- **Enabled by default** and will not be removed.
+- Backward-compatible changes only.
+- Safe for production.
+
+The progression: `v1alpha1` → `v1alpha2` → ... → `v1beta1` → `v1beta2`
+→ ... → `v1`. Not every step is required - some APIs jump from alpha
+straight to stable.
+
+
+## The API deprecation policy
+
+Kubernetes has a formal deprecation policy to protect users:
+
+- **Stable (GA) APIs** are never removed within the same major version.
+  `v1` APIs in Kubernetes 1.x will remain available for as long as 1.x
+  exists.
+- **Beta APIs** must be supported for at least **9 months or 3 releases**
+  (whichever is longer) after deprecation.
+- **Alpha APIs** can be removed in any release without notice.
+- When an API version is deprecated, the **newer version** is already
+  available. You get time to migrate.
+
+### What deprecation looks like in practice
+
+When you use a deprecated API, `kubectl` warns you:
+
+<TerminalBlock label="deprecation warning">
+{`Warning: policy/v1beta1 PodDisruptionBudget is deprecated in v1.21+, unavailable in v1.25+; use policy/v1 PodDisruptionBudget`}
+</TerminalBlock>
+
+The warning tells you the old version and when it will be removed, and
+which version to migrate to.
+
+
+## Checking which version to use
+
+If you are unsure which `apiVersion` a resource needs, use:
+
+<TerminalBlock command="kubectl explain deployment">
+{`KIND:     Deployment
+VERSION:  apps/v1
+
+DESCRIPTION:
+  Deployment enables declarative updates for Pods and ReplicaSets.
+...`}
+</TerminalBlock>
+
+`kubectl explain` shows the correct group/version and describes every
+field in the spec. It is the fastest way to look up manifest structure
+from the command line.
+
+</LessonFrame>

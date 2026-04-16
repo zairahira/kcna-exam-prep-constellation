@@ -1,0 +1,86 @@
+import DebugPuzzle from "@/components/puzzle/DebugPuzzle";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-warning uppercase tracking-wide mb-1">debug challenge</p>
+  <h1 className="text-2xl font-bold">Kubernetes Architecture</h1>
+  <p className="text-fg-subtle text-sm mt-2">
+    4 challenges covering control plane components, worker nodes, and cluster communication.
+  </p>
+</header>
+
+<DebugPuzzle
+  id="m02-d1"
+  syllabusIds={["KF-01"]}
+  prompt={<p>A junior engineer is troubleshooting a cluster and tries to query <code>etcd</code> directly from the scheduler node using <code>etcdctl get /registry/pods</code>. The command returns data, but the team lead says this is dangerous and should never be done. Why?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "etcd is encrypted and no other tool can read its data." },
+    { id: "b", label: "Only kube-apiserver should interact with etcd. Direct access bypasses authentication, authorisation, and admission control - and risks corrupting cluster state." },
+    { id: "c", label: "etcd only stores logs, not cluster state, so querying it is pointless." },
+    { id: "d", label: "The scheduler already has a built-in etcd client, so a second connection would cause a conflict." },
+  ]}
+  correctId="b"
+  explanation={<p>The <code>kube-apiserver</code> is the only component designed to read from and write to <code>etcd</code>. It enforces authentication, authorisation (RBAC), admission control, and validation on every request. Accessing <code>etcd</code> directly bypasses all of these safeguards. A stray write could corrupt the cluster&apos;s source of truth. In production, <code>etcd</code> access should be tightly restricted with mTLS certificates.</p>}
+/>
+
+<DebugPuzzle
+  id="m02-d2"
+  syllabusIds={["KF-02"]}
+  prompt={<p>A new Pod is stuck in <code>Pending</code> state. You describe it and see the event below. What is the most likely cause?</p>}
+  artifact={
+    <TerminalBlock command="kubectl describe pod my-app-7f6b8c4d9-xk2lp">
+      {"Events:\n  Type     Reason            Age   Message\n  ----     ------            ----  -------\n  Warning  FailedScheduling  30s   0/3 nodes are available: 3 Insufficient cpu.\n"}
+    </TerminalBlock>
+  }
+  choices={[
+    { id: "a", label: "The kube-scheduler is not running." },
+    { id: "b", label: "The Pod requests more CPU than any node can provide. The scheduler filtered out all nodes during its feasibility check." },
+    { id: "c", label: "The kubelet rejected the Pod because the image doesn't exist." },
+    { id: "d", label: "kube-proxy is blocking network traffic to the Pod." },
+  ]}
+  correctId="b"
+  explanation={<p>The message <code>0/3 nodes are available: 3 Insufficient cpu</code> means the scheduler evaluated all 3 nodes and none had enough allocatable CPU to satisfy the Pod&apos;s resource request. The fix is to either reduce the Pod&apos;s CPU request, add nodes with more capacity, or free up resources on existing nodes. If the scheduler were down, you wouldn&apos;t see a <code>FailedScheduling</code> event at all.</p>}
+/>
+
+<DebugPuzzle
+  id="m02-d3"
+  syllabusIds={["KF-03"]}
+  prompt={<p>After a control plane upgrade, you notice two instances of <code>kube-controller-manager</code> are running. The team worries both are processing work simultaneously. Is this a problem?</p>}
+  artifact={
+    <TerminalBlock command="kubectl get leases -n kube-system kube-controller-manager -o wide">
+      {"NAME                      HOLDER                            AGE\nkube-controller-manager   ctrl-plane-2_abc12345-67890       2m\n"}
+    </TerminalBlock>
+  }
+  choices={[
+    { id: "a", label: "Yes - two controller managers will create duplicate Pods and corrupt the cluster." },
+    { id: "b", label: "No - leader election ensures only one instance is active. The Lease object shows which replica is the leader; the other is on standby." },
+    { id: "c", label: "No - controller managers are stateless, so running multiple instances simply doubles throughput." },
+    { id: "d", label: "Yes - you must always run exactly one instance of every control plane component." },
+  ]}
+  correctId="b"
+  explanation={<p>Both <code>kube-controller-manager</code> and <code>kube-scheduler</code> use <strong>leader election</strong> via Lease objects in the API server. Only the holder of the Lease actively processes work. The other replica is standby and takes over if the leader stops renewing. This is the standard high availability pattern. The <code>HOLDER</code> field confirms which instance is currently leading.</p>}
+/>
+
+<DebugPuzzle
+  id="m02-d4"
+  syllabusIds={["KF-04"]}
+  prompt={<p>A node in the cluster shows <code>NotReady</code> status. Pods on that node are still listed but not receiving traffic. What has likely happened?</p>}
+  artifact={
+    <TerminalBlock command="kubectl get nodes">
+      {"NAME       STATUS     ROLES    AGE   VERSION\nnode-01    Ready      <none>   42d   v1.30.2\nnode-02    NotReady   <none>   42d   v1.30.2\nnode-03    Ready      <none>   42d   v1.30.2\n"}
+    </TerminalBlock>
+  }
+  choices={[
+    { id: "a", label: "The kubelet on node-02 has stopped sending heartbeats. The node controller marked it NotReady and kube-proxy has removed it from Service endpoints." },
+    { id: "b", label: "The kube-scheduler crashed and can no longer track node health." },
+    { id: "c", label: "etcd deleted the node object because it ran out of storage." },
+    { id: "d", label: "kube-proxy on node-02 has been upgraded and is rebooting." },
+  ]}
+  correctId="a"
+  explanation={<p>The <code>kubelet</code> sends heartbeats (via <code>Lease</code> renewals and <code>NodeStatus</code> updates) to the API server. When heartbeats stop, the <strong>node controller</strong> (inside <code>kube-controller-manager</code>) marks the node <code>NotReady</code>. The endpoint controller then removes Pods on that node from Service endpoints, so <code>kube-proxy</code> stops routing traffic to them. The scheduler does not monitor node health - that is the node controller&apos;s job.</p>}
+/>
+
+</div>

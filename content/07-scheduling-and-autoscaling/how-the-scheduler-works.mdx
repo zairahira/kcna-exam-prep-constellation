@@ -1,0 +1,110 @@
+import LessonFrame from "@/components/LessonFrame";
+
+<LessonFrame
+  lessonTitle="How the scheduler works"
+  domain="Kubernetes Fundamentals · 46%"
+  mustLearn={[
+    "The role of kube-scheduler and when it runs",
+    "The two phases: filtering (predicates) and scoring (priorities)",
+    "How binding assigns a Pod to a node",
+    "That you can replace or extend the default scheduler",
+  ]}
+>
+
+## What does the scheduler do?
+
+When you create a Pod that does not have a `nodeName` set, the
+**kube-scheduler** watches for it and decides which node it should run on.
+The scheduler does not actually start the Pod - it writes the chosen node
+name into the Pod spec. The `kubelet` on that node then takes over and runs
+the containers.
+
+The scheduler runs as a control plane component, typically as a static Pod
+on a control plane node.
+
+
+## The scheduling cycle
+
+Each unscheduled Pod goes through a two-phase process:
+
+### Phase 1 - Filtering (predicates)
+
+The scheduler eliminates nodes that **cannot** run the Pod. These checks are
+called **predicates** or **filter plugins**. Common reasons a node gets
+filtered out:
+
+| Filter | What it checks |
+|--------|---------------|
+| `PodFitsResources` | Does the node have enough CPU and memory for the Pod's resource requests? |
+| `PodFitsHostPorts` | Is the requested `hostPort` already in use on the node? |
+| `NodeAffinity` | Does the node match the Pod's `nodeSelector` or `nodeAffinity` rules? |
+| `TaintToleration` | Does the Pod tolerate the node's taints? |
+| `NoVolumeZoneConflict` | Is the requested PersistentVolume in the same zone as the node? |
+
+After filtering, the scheduler has a list of **feasible nodes** - nodes that
+can run the Pod. If no node passes filtering, the Pod stays in `Pending`
+state.
+
+### Phase 2 - Scoring (priorities)
+
+Among the feasible nodes, the scheduler **ranks** them using scoring
+functions (also called **priorities** or **score plugins**). Each function
+assigns a score, and the scores are weighted and summed. Common scoring
+factors:
+
+- **`LeastRequestedPriority`** - prefers nodes with the most available
+  resources (spreads load)
+- **`BalancedResourceAllocation`** - prefers nodes where CPU and memory
+  usage are balanced
+- **`ImageLocality`** - prefers nodes that already have the container image
+  cached (faster startup)
+- **`NodeAffinity`** - gives higher scores to nodes that match preferred
+  (not required) affinity rules
+
+The node with the highest total score wins. If there is a tie, one of the
+tied nodes is picked at random.
+
+
+## Binding
+
+Once a node is selected, the scheduler creates a **Binding** object that
+sets the Pod's `spec.nodeName` to the chosen node. This is called
+**binding**. The kubelet on that node sees the assignment and starts the
+containers.
+
+The full flow:
+
+1. Pod created without `nodeName` → enters the **scheduling queue**
+2. **Filter** - remove nodes that can't run the Pod
+3. **Score** - rank remaining nodes
+4. **Bind** - assign the Pod to the top-scoring node
+5. kubelet on that node starts the containers
+
+
+## The default scheduler
+
+Kubernetes ships with a single default scheduler called `default-scheduler`.
+It handles all Pods unless you specify a different scheduler.
+
+You can check which scheduler a Pod is using:
+
+| Field | What it does |
+|-------|-------------|
+| `spec.schedulerName` | Names the scheduler responsible for this Pod. Defaults to `default-scheduler`. |
+
+
+## Extending or replacing the scheduler
+
+For the exam, know that these options exist:
+
+- **Scheduler profiles** - configure the default scheduler's plugins
+  (enable, disable, reorder, or add custom plugins) without writing a new
+  scheduler
+- **Multiple schedulers** - run a second scheduler alongside the default one.
+  Pods opt in by setting `spec.schedulerName`
+- **Scheduler extenders** - webhooks that the default scheduler calls for
+  custom filter/score logic (legacy approach, being replaced by plugins)
+
+Most clusters use the default scheduler without modification.
+
+</LessonFrame>

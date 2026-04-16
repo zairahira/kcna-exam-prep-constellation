@@ -1,0 +1,100 @@
+import LessonFrame from "@/components/LessonFrame";
+
+<LessonFrame
+  lessonTitle="The Twelve-Factor App"
+  domain="Cloud Native Architecture · 22%"
+  mustLearn={[
+    "What the Twelve-Factor App methodology is and why it's cited so often",
+    "The 12 factors at a summary level",
+    "Which factors Kubernetes directly supports or enforces",
+    "Why 12-factor and cloud native are closely related",
+  ]}
+>
+
+## What is the Twelve-Factor App?
+
+The **Twelve-Factor App** is a methodology for building software-as-a-service
+apps originally written by Heroku engineers (~2011). It predates cloud
+native but is cited constantly because most of the factors are directly
+what cloud native practices encode.
+
+Full text: `12factor.net`.
+
+## The twelve factors
+
+### I. Codebase - one codebase, many deploys
+
+One version-controlled repo per app. Many deploys (dev, staging, prod) run
+the same codebase. **K8s fit**: containerized app + the same image deployed
+to multiple environments.
+
+### II. Dependencies - explicit, isolated
+
+Declare all dependencies explicitly (`package.json`, `go.mod`,
+`requirements.txt`). Never rely on system-wide packages. **K8s fit**:
+container images encapsulate exact dependency versions.
+
+### III. Config - in the environment
+
+Config that varies between deploys lives in environment variables (or
+similar), not in code. **K8s fit**: ConfigMaps and Secrets injected as
+env vars or volumes.
+
+### IV. Backing services - treated as attached resources
+
+Databases, caches, queues, object stores - all attached via URLs/credentials
+from config. Swap them by changing config, no code change. **K8s fit**:
+Services for in-cluster backing services; env/Secrets for external ones.
+
+### V. Build, release, run - strictly separated
+
+Distinct phases. Build: turn code into an immutable artifact. Release:
+combine build + config. Run: execute. **K8s fit**: build images in CI,
+deploy them via Deployments.
+
+### VI. Processes - stateless, share-nothing
+
+App processes are stateless. State lives in backing services. **K8s fit**:
+Pods are ephemeral; persist state in PVs or external stores.
+
+### VII. Port binding - export via port binding
+
+The app self-contains its web server and listens on a port. **K8s fit**:
+container image exposes a port; Services front it.
+
+### VIII. Concurrency - scale via process model
+
+Scale by running more processes, not bigger ones. **K8s fit**: replicas.
+
+### IX. Disposability - fast startup, graceful shutdown
+
+Processes should start quickly and shut down cleanly (handle `SIGTERM`).
+**K8s fit**: rolling updates and scaling work only if Pods disposable.
+
+### X. Dev/prod parity - keep them similar
+
+Minimise the gap between development and production. **K8s fit**: run the
+same container image everywhere (Docker Compose, kind, prod cluster).
+
+### XI. Logs - treat as event streams
+
+Write logs to `stdout`/`stderr`. Don&apos;t manage log files inside the app.
+**K8s fit**: kubectl logs, centralised collection via Fluentd/Fluent Bit.
+
+### XII. Admin processes - run as one-offs
+
+Database migrations, one-time scripts - run in the same environment as the
+app. **K8s fit**: `kubectl exec` or one-shot Jobs.
+
+
+## The relationship to cloud native
+
+Not every cloud native app follows all 12 factors to the letter - and some
+modern apps intentionally break a few (e.g. stateful services aren&apos;t
+share-nothing). But the overlap is deliberate: cloud native tooling (and
+Kubernetes specifically) was designed with 12-factor-style apps in mind.
+
+If you design an app around the 12 factors, it will run naturally on
+Kubernetes. If you violate them heavily, you&apos;ll fight the platform.
+
+</LessonFrame>

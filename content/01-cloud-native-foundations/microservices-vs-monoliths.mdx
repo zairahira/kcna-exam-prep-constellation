@@ -1,0 +1,118 @@
+import LessonFrame from "@/components/LessonFrame";
+
+<LessonFrame
+  lessonTitle="Microservices vs monoliths"
+  domain="Cloud Native Architecture · 22%"
+  mustLearn={[
+    "What a monolithic architecture is and its trade-offs",
+    "What a microservices architecture is and its trade-offs",
+    "When a monolith is the right choice vs when microservices make sense",
+    "Common communication patterns between microservices (sync REST/gRPC, async messaging)",
+    "The relationship between microservices and containers/Kubernetes",
+  ]}
+>
+
+## Monolithic architecture
+
+A **monolith** is a single deployable unit. The entire application - UI,
+business logic, data access - is built, tested, and deployed as one
+artifact (a single binary, a single WAR file, a single container).
+
+### Advantages
+
+- **Simple to develop** - one codebase, one build, one deploy.
+- **Simple to test** - end-to-end tests run against one process.
+- **Simple to debug** - one set of logs, one process to trace.
+- **Low operational overhead** - one thing to monitor, scale, and deploy.
+
+### Disadvantages
+
+- **Scaling is all-or-nothing** - you can't scale just the part that's
+  under load. The whole monolith scales together.
+- **Deploys are risky** - a small change requires redeploying everything.
+  One bug can take down the whole app.
+- **Team coupling** - large teams working on the same codebase step on
+  each other. Merge conflicts and coordination overhead grow fast.
+- **Technology lock-in** - the whole app uses one language, one framework,
+  one database.
+
+
+## Microservices architecture
+
+A **microservices architecture** decomposes the application into small,
+independently deployable services. Each service owns one bounded piece of
+business logic, has its own data store, and communicates with other services
+over the network.
+
+### Advantages
+
+- **Independent scaling** - scale the services that need it, not everything.
+- **Independent deploys** - ship one service without redeploying others.
+  Smaller blast radius.
+- **Team autonomy** - each team owns a service end-to-end. They pick their
+  own language, framework, and release cadence.
+- **Fault isolation** - one service crashing doesn't necessarily bring down
+  the whole system (if properly designed).
+
+### Disadvantages
+
+- **Distributed systems complexity** - network failures, latency, partial
+  failures, eventual consistency.
+- **Operational overhead** - many services to deploy, monitor, log,
+  trace. Requires mature CI/CD, observability, and orchestration.
+- **Data management** - each service owning its data means no simple JOINs.
+  You need patterns like event sourcing or saga for cross-service
+  transactions.
+- **Testing** - integration testing across services is harder than testing
+  a single process.
+
+
+## When to use which
+
+| Situation | Recommended approach |
+|-----------|---------------------|
+| Small team, early product | Monolith - keep it simple |
+| Need to ship fast and iterate | Monolith - less coordination overhead |
+| Team has grown, deploys are slow and risky | Consider decomposing into microservices |
+| Different parts have very different scaling needs | Microservices help here |
+| Regulatory isolation between components | Microservices with clear boundaries |
+
+A common pattern is to **start monolith, decompose later** when the team
+and the product complexity justify it. Premature decomposition into
+microservices is a well-documented antipattern.
+
+
+## Communication patterns
+
+Microservices communicate over the network. Two main styles:
+
+### Synchronous (request/response)
+
+- **REST** (HTTP/JSON) - simple, widely supported, human-readable.
+- **gRPC** (HTTP/2, Protocol Buffers) - faster, strongly typed, better for
+  service-to-service calls. CNCF Incubating project.
+
+### Asynchronous (event-driven)
+
+- **Message queues** (RabbitMQ, Amazon SQS) - one service publishes a
+  message, another consumes it.
+- **Event streaming** (Apache Kafka, NATS) - events are published to a
+  log/stream, multiple consumers can read independently.
+
+Async patterns reduce coupling - the sender doesn't wait for the receiver -
+but add complexity (eventual consistency, message ordering, dead letters).
+
+
+## The Kubernetes connection
+
+Kubernetes doesn't require microservices, and microservices don't require
+Kubernetes. But they're a natural fit:
+
+- Each microservice runs as its own `Deployment` with its own replica count.
+- `Services` provide stable network identities for inter-service
+  communication.
+- Scaling one service independently is trivial (change `replicas` or use
+  an HPA).
+- Rolling updates let you deploy one service without touching others.
+
+</LessonFrame>

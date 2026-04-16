@@ -1,0 +1,50 @@
+import DebugPuzzle from "@/components/puzzle/DebugPuzzle";
+
+<div className="max-w-3xl mx-auto px-8 py-10">
+
+<header className="cc-card p-5 mb-10">
+  <p className="mono text-xs text-warning uppercase tracking-wide mb-1">debug challenge</p>
+  <h1 className="text-2xl font-bold">Cloud Native Architecture</h1>
+  <p className="text-fg-subtle text-sm mt-2">3 challenges covering 12-factor, serverless, and CNCF.</p>
+</header>
+
+<DebugPuzzle id="m10-d1" syllabusIds={["CNA-12F"]}
+  prompt={<p>A team hardcodes the production database URL into their application code and recompiles for each environment. Which 12-factor principle are they violating, and why does it matter?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "III. Config - config that varies between environments must live in the environment (env vars / external config), not baked into the code. Violating this makes the same code behave differently across deploys, which undermines build-once-run-anywhere." },
+    { id: "b", label: "VIII. Concurrency - the database URL affects scaling." },
+    { id: "c", label: "I. Codebase - they probably have multiple repos." },
+    { id: "d", label: "No factor - hardcoding config is a valid approach." },
+  ]}
+  correctId="a"
+  explanation={<p>Factor III says "config in the environment." The same build artifact should run in any environment with only config differences. Hardcoded URLs force rebuilds per environment, break parity, and often leak secrets. Fix: read the DB URL from an env var populated by a ConfigMap or Secret.</p>}
+/>
+
+<DebugPuzzle id="m10-d2" syllabusIds={["CNA-SL"]}
+  prompt={<p>A team moves a latency-sensitive real-time pricing API to AWS Lambda (FaaS). They start getting complaints about tail latency. What's the most likely cause?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "Cold starts - scale-to-zero means idle functions spin up fresh on new invocations, adding 100ms–several seconds of latency. Latency-sensitive APIs with real-time SLOs are often a poor fit for FaaS." },
+    { id: "b", label: "Lambda can't serve HTTP at all." },
+    { id: "c", label: "Lambda region was set to the wrong continent." },
+    { id: "d", label: "FaaS automatically doubles request latency." },
+  ]}
+  correctId="a"
+  explanation={<p>FaaS trades idle cost for cold-start latency. For steady, latency-sensitive workloads an always-on service (K8s Deployment, ECS) usually wins. Knative, Cloud Run, and some Lambda configs offer "minimum instances" to mitigate cold starts at the cost of always-on capacity.</p>}
+/>
+
+<DebugPuzzle id="m10-d3" syllabusIds={["CNA-CNCF"]}
+  prompt={<p>A team evaluates a CNCF project marked <code>Sandbox</code>. Which is the best interpretation of that label?</p>}
+  artifact={null}
+  choices={[
+    { id: "a", label: "The project is experimental/early-stage. It may be excellent, but it hasn't demonstrated broad adoption and sustained community yet - factor that into your risk assessment." },
+    { id: "b", label: "The project is for Kubernetes labs only, not production." },
+    { id: "c", label: "The project is deprecated." },
+    { id: "d", label: "Sandbox projects are free; Graduated are paid." },
+  ]}
+  correctId="a"
+  explanation={<p>Sandbox = early-stage CNCF hosting. Not a negative signal on its own - many excellent projects start there - but production adoption carries more risk than using a Graduated project (widely adopted, multi-org maintainers, mature governance).</p>}
+/>
+
+</div>

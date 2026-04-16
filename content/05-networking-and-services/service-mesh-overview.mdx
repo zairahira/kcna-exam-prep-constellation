@@ -1,0 +1,161 @@
+import LessonFrame from "@/components/LessonFrame";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Service mesh overview"
+  domain="Container Orchestration · 22%"
+  mustLearn={[
+    "What a service mesh is and what problems it solves",
+    "The sidecar proxy model and the data plane vs control plane",
+    "Key features: mTLS, traffic management, observability",
+    "Major implementations: Istio, Linkerd, and Envoy (CNCF Graduated)",
+  ]}
+>
+
+## What is a service mesh?
+
+A **service mesh** is a dedicated infrastructure layer for handling
+service-to-service communication within a cluster. It takes networking
+concerns like encryption, retries, load balancing, and observability **out
+of application code** and into the infrastructure.
+
+Without a service mesh, each application needs to implement its own:
+- TLS encryption between services
+- Retry logic and circuit breaking
+- Traffic metrics and distributed tracing
+- Access control between services
+
+A service mesh handles all of this transparently, with no changes to your
+application code.
+
+
+## The sidecar proxy model
+
+The most common service mesh architecture uses the **sidecar pattern**.
+Every Pod gets a proxy container injected alongside the application
+container. All inbound and outbound traffic flows through this proxy.
+
+```
+┌─────────────────────────────────┐
+│  Pod                            │
+│  ┌───────────┐  ┌────────────┐  │
+│  │   App     │──│  Sidecar   │──────► Network
+│  │ Container │  │   Proxy    │  │
+│  └───────────┘  └────────────┘  │
+└─────────────────────────────────┘
+```
+
+The application sends traffic to `localhost`, and the sidecar proxy
+intercepts it, applies policies (mTLS, retries, routing rules), and
+forwards it to the destination's sidecar proxy.
+
+
+## Data plane vs control plane
+
+A service mesh has two layers:
+
+| Layer | What it does | Components |
+|-------|-------------|------------|
+| **Data plane** | Handles the actual traffic between services. Consists of all the sidecar proxies. | Envoy, linkerd2-proxy |
+| **Control plane** | Configures and manages the data plane. Pushes policy, certificates, and routing rules to the proxies. | Istio (istiod), Linkerd (control plane) |
+
+The control plane is the brain; the data plane is the muscle.
+
+
+## Key features
+
+### Mutual TLS (mTLS)
+
+The mesh automatically encrypts all service-to-service traffic using
+**mutual TLS**. Both the client and server present certificates and verify
+each other's identity. This provides:
+
+- **Encryption in transit** - traffic is encrypted even within the cluster
+- **Identity verification** - each service cryptographically proves who it is
+- **Zero application changes** - the sidecar proxy handles all TLS
+
+Without a mesh, traffic between Pods is typically plain HTTP inside the
+cluster.
+
+### Traffic management
+
+The mesh can control how traffic flows between services:
+
+| Feature | Description |
+|---------|-------------|
+| **Traffic splitting** | Send 90% of traffic to v1, 10% to v2 (canary deployments) |
+| **Retries** | Automatically retry failed requests with configurable limits |
+| **Timeouts** | Enforce request timeouts at the infrastructure level |
+| **Circuit breaking** | Stop sending traffic to an unhealthy service |
+| **Mirroring** | Copy live traffic to a test service without affecting production |
+
+### Observability
+
+Because all traffic flows through the sidecar proxies, the mesh can
+automatically collect:
+
+- **Metrics** - request rate, error rate, latency (the "golden signals")
+- **Distributed traces** - track a request across multiple services
+- **Access logs** - detailed logs of every request
+
+This gives you deep visibility into service-to-service communication without
+adding any instrumentation code to your applications.
+
+
+## Major implementations
+
+### Envoy
+
+**Envoy** is a high-performance proxy originally built at Lyft. It is a
+**CNCF Graduated** project. Envoy is not a service mesh by itself - it's
+the data plane proxy that most meshes build on.
+
+- Used as the sidecar proxy in Istio and other meshes
+- Also used as an edge proxy (Ingress) and API gateway
+- Features: L4/L7 load balancing, HTTP/2, gRPC, observability, extensible filters
+
+### Istio
+
+**Istio** is the most feature-rich and widely known service mesh. It uses
+Envoy as its data plane proxy.
+
+- Control plane component: `istiod`
+- Features: mTLS, traffic management, authorization policies, observability
+- Complexity: powerful but has a steep learning curve
+- Joined the CNCF as a Graduated project
+
+### Linkerd
+
+**Linkerd** is a lighter-weight service mesh focused on simplicity.
+It uses its own Rust-based micro-proxy (`linkerd2-proxy`) instead of
+Envoy.
+
+- CNCF Graduated project
+- Simpler to install and operate than Istio
+- Features: mTLS, retries, load balancing, golden metrics
+- Trade-off: fewer advanced features than Istio
+
+### Quick comparison
+
+| | Envoy | Istio | Linkerd |
+|---|-------|-------|---------|
+| What it is | Proxy (data plane) | Full service mesh | Full service mesh |
+| Data plane | Envoy itself | Envoy | linkerd2-proxy (Rust) |
+| CNCF status | Graduated | Graduated | Graduated |
+| Complexity | N/A (component) | High | Low |
+
+
+## When do you need a service mesh?
+
+A service mesh adds operational complexity. It's worth it when:
+
+- You have many services and need consistent mTLS across all of them
+- You need fine-grained traffic control (canary deployments, traffic splitting)
+- You need deep observability without modifying application code
+- You need to enforce access policies between services
+
+For small deployments with a few services, a mesh is usually overkill.
+Kubernetes Services, NetworkPolicy, and application-level observability
+may be sufficient.
+
+</LessonFrame>
