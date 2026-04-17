@@ -1,45 +1,274 @@
 {
-  "_comment": "KCNA syllabus coverage matrix. Each syllabus item MUST be covered by at least one lesson before its act ships. Keys are stable syllabus IDs referenced by lessons and puzzles. Build-time check planned (see plan guardrails).",
+  "_comment": "KCNA syllabus coverage matrix. Each syllabus item MUST be covered by at least one lesson before its module ships. Keys are stable syllabus IDs referenced by lessons, debug puzzles, and quiz questions. IDs are prefixed by domain: KF (Kubernetes Fundamentals), CO (Container Orchestration), CAD (Cloud Native Application Delivery), CNA (Cloud Native Architecture).",
+  "domains": {
+    "Kubernetes Fundamentals": { "weight": "44%" },
+    "Container Orchestration": { "weight": "28%" },
+    "Cloud Native Application Delivery": { "weight": "16%" },
+    "Cloud Native Architecture": { "weight": "12%" }
+  },
   "syllabus": {
-    "K8S-F-01": {
+    "CNA-01": {
+      "title": "Cloud native principles and microservices vs monoliths",
+      "domain": "Cloud Native Architecture",
+      "coveredBy": [
+        "01-kcna-exam-and-cloud-native-essentials/cloud-native-principles-and-microservices"
+      ]
+    },
+    "CNA-02": {
+      "title": "Containers, OCI images, and the Container Runtime Interface",
+      "domain": "Cloud Native Architecture",
+      "coveredBy": [
+        "01-kcna-exam-and-cloud-native-essentials/containers-and-runtimes"
+      ]
+    },
+    "CNA-03": {
+      "title": "Container orchestration: Docker Swarm vs Kubernetes",
+      "domain": "Cloud Native Architecture",
+      "coveredBy": [
+        "01-kcna-exam-and-cloud-native-essentials/container-orchestration"
+      ]
+    },
+    "CNA-04": {
+      "title": "KCNA exam format and domain structure",
+      "domain": "Cloud Native Architecture",
+      "coveredBy": [
+        "01-kcna-exam-and-cloud-native-essentials/the-kcna-certification"
+      ]
+    },
+    "KF-01": {
       "title": "Kubernetes cluster architecture",
       "domain": "Kubernetes Fundamentals",
-      "coveredBy": ["act-1/01-cluster-architecture"]
+      "coveredBy": []
     },
-    "K8S-F-02": {
-      "title": "Pods and workload resources",
+    "KF-02": {
+      "title": "Control plane components",
       "domain": "Kubernetes Fundamentals",
-      "coveredBy": ["act-1/02-pods-and-workloads"]
+      "coveredBy": []
     },
-    "K8S-F-03": {
-      "title": "Services and networking basics",
+    "KF-03": {
+      "title": "Worker node components",
       "domain": "Kubernetes Fundamentals",
-      "coveredBy": ["act-1/03-services-and-networking"]
+      "coveredBy": []
     },
-    "K8S-F-04": {
-      "title": "Namespaces, labels, selectors",
-      "domain": "Kubernetes Fundamentals",
-      "coveredBy": ["act-1/04-namespaces-labels-selectors"]
-    },
-    "K8S-F-05": {
-      "title": "ConfigMaps and Secrets",
-      "domain": "Kubernetes Fundamentals",
-      "coveredBy": ["act-1/05-configmaps-and-secrets"]
-    },
-    "K8S-F-06": {
-      "title": "Storage basics (Volumes, PV, PVC)",
-      "domain": "Kubernetes Fundamentals",
-      "coveredBy": ["act-1/06-storage-basics"]
-    },
-    "K8S-F-07": {
+    "KF-04": {
       "title": "kubectl fluency",
       "domain": "Kubernetes Fundamentals",
-      "coveredBy": ["act-1/07-kubectl-fluency"]
+      "coveredBy": []
     },
-    "K8S-F-08": {
-      "title": "API objects and manifests",
+    "KF-05": {
+      "title": "Imperative vs declarative management",
       "domain": "Kubernetes Fundamentals",
-      "coveredBy": ["act-1/08-api-objects-and-manifests"]
+      "coveredBy": []
+    },
+    "KF-06": {
+      "title": "Pods and pod manifests",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": []
+    },
+    "KF-07": {
+      "title": "ReplicaSets and Deployments",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": []
+    },
+    "KF-08": {
+      "title": "Other workload types (StatefulSets, DaemonSets, Jobs, CronJobs)",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": []
+    },
+    "KF-09": {
+      "title": "Pod lifecycle and probes",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": []
+    },
+    "KF-10": {
+      "title": "Namespaces",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": []
+    },
+    "KF-11": {
+      "title": "Labels, selectors, and annotations",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": []
+    },
+    "KF-12": {
+      "title": "ConfigMaps and Secrets",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": []
+    },
+    "KF-13": {
+      "title": "Scheduling: how the scheduler works",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": []
+    },
+    "KF-14": {
+      "title": "Node selectors, affinity, taints, and tolerations",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": []
+    },
+    "KF-15": {
+      "title": "Resource requests, limits, and QoS classes",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": []
+    },
+    "KF-16": {
+      "title": "Autoscaling (HPA, VPA, Cluster Autoscaler)",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": []
+    },
+    "KF-17": {
+      "title": "API groups and versioning",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": []
+    },
+    "KF-18": {
+      "title": "Custom Resource Definitions and the operator pattern",
+      "domain": "Kubernetes Fundamentals",
+      "coveredBy": []
+    },
+    "CO-01": {
+      "title": "Kubernetes networking model and CNI",
+      "domain": "Container Orchestration",
+      "coveredBy": []
+    },
+    "CO-02": {
+      "title": "Services (ClusterIP, NodePort, LoadBalancer, ExternalName)",
+      "domain": "Container Orchestration",
+      "coveredBy": []
+    },
+    "CO-03": {
+      "title": "DNS in Kubernetes",
+      "domain": "Container Orchestration",
+      "coveredBy": []
+    },
+    "CO-04": {
+      "title": "Ingress and Ingress controllers",
+      "domain": "Container Orchestration",
+      "coveredBy": []
+    },
+    "CO-05": {
+      "title": "Network policies",
+      "domain": "Container Orchestration",
+      "coveredBy": []
+    },
+    "CO-06": {
+      "title": "Volumes and ephemeral storage",
+      "domain": "Container Orchestration",
+      "coveredBy": []
+    },
+    "CO-07": {
+      "title": "PersistentVolumes and PersistentVolumeClaims",
+      "domain": "Container Orchestration",
+      "coveredBy": []
+    },
+    "CO-08": {
+      "title": "StorageClasses and dynamic provisioning",
+      "domain": "Container Orchestration",
+      "coveredBy": []
+    },
+    "CO-09": {
+      "title": "Container Storage Interface (CSI)",
+      "domain": "Container Orchestration",
+      "coveredBy": []
+    },
+    "CO-10": {
+      "title": "Authentication and security primitives",
+      "domain": "Container Orchestration",
+      "coveredBy": []
+    },
+    "CO-11": {
+      "title": "RBAC (Roles, ClusterRoles, bindings)",
+      "domain": "Container Orchestration",
+      "coveredBy": []
+    },
+    "CO-12": {
+      "title": "ServiceAccounts",
+      "domain": "Container Orchestration",
+      "coveredBy": []
+    },
+    "CO-13": {
+      "title": "Pod security (contexts and Pod Security Standards)",
+      "domain": "Container Orchestration",
+      "coveredBy": []
+    },
+    "CO-14": {
+      "title": "Image security and admission controllers",
+      "domain": "Container Orchestration",
+      "coveredBy": []
+    },
+    "CNA-05": {
+      "title": "The Twelve-Factor App",
+      "domain": "Cloud Native Architecture",
+      "coveredBy": []
+    },
+    "CNA-06": {
+      "title": "Serverless and Functions-as-a-Service",
+      "domain": "Cloud Native Architecture",
+      "coveredBy": []
+    },
+    "CNA-07": {
+      "title": "Service mesh and microservices patterns",
+      "domain": "Cloud Native Architecture",
+      "coveredBy": []
+    },
+    "CNA-08": {
+      "title": "CNCF ecosystem and open standards",
+      "domain": "Cloud Native Architecture",
+      "coveredBy": []
+    },
+    "CNA-09": {
+      "title": "Kubernetes community: KEPs, SIGs, governance",
+      "domain": "Cloud Native Architecture",
+      "coveredBy": []
+    },
+    "CNA-10": {
+      "title": "Observability: telemetry and the three pillars",
+      "domain": "Cloud Native Architecture",
+      "coveredBy": []
+    },
+    "CNA-11": {
+      "title": "Prometheus and metrics",
+      "domain": "Cloud Native Architecture",
+      "coveredBy": []
+    },
+    "CNA-12": {
+      "title": "Logging in Kubernetes",
+      "domain": "Cloud Native Architecture",
+      "coveredBy": []
+    },
+    "CNA-13": {
+      "title": "Distributed tracing and OpenTelemetry",
+      "domain": "Cloud Native Architecture",
+      "coveredBy": []
+    },
+    "CNA-14": {
+      "title": "SLOs, SLAs, SLIs, and cost management",
+      "domain": "Cloud Native Architecture",
+      "coveredBy": []
+    },
+    "CAD-01": {
+      "title": "CI/CD fundamentals",
+      "domain": "Cloud Native Application Delivery",
+      "coveredBy": []
+    },
+    "CAD-02": {
+      "title": "GitOps principles (push vs pull)",
+      "domain": "Cloud Native Application Delivery",
+      "coveredBy": []
+    },
+    "CAD-03": {
+      "title": "GitOps tools: Argo CD and Flux",
+      "domain": "Cloud Native Application Delivery",
+      "coveredBy": []
+    },
+    "CAD-04": {
+      "title": "Helm and Kustomize",
+      "domain": "Cloud Native Application Delivery",
+      "coveredBy": []
+    },
+    "CAD-05": {
+      "title": "Debugging application delivery",
+      "domain": "Cloud Native Application Delivery",
+      "coveredBy": []
     }
   }
 }

@@ -1,0 +1,119 @@
+import LessonFrame from "@/components/LessonFrame";
+import Checkpoint from "@/components/quiz/Checkpoint";
+
+<LessonFrame
+  lessonTitle="Quiz: Cloud Native Essentials"
+  domain="Cloud Native Architecture"
+  mustLearn={[
+    "Validate your understanding of the KCNA exam structure",
+    "Test your knowledge of cloud native principles and architectures",
+    "Confirm your grasp of container runtimes and the CRI",
+    "Check your understanding of container orchestration and why Kubernetes won",
+  ]}
+>
+
+<Checkpoint
+  id="m01-q01"
+  question="What is the passing score for the KCNA exam?"
+  choices={[
+    { id: "a", label: "60%" },
+    { id: "b", label: "66%" },
+    { id: "c", label: "75%" },
+    { id: "d", label: "80%" },
+  ]}
+  correctId="c"
+  feedback={<p>The KCNA requires a score of 75% to pass — that is 45 correct answers out of 60 questions within a 90-minute time limit.</p>}
+/>
+
+<Checkpoint
+  id="m01-q02"
+  question="Which KCNA exam domain carries the most weight?"
+  choices={[
+    { id: "a", label: "Container Orchestration (28%)" },
+    { id: "b", label: "Kubernetes Fundamentals (44%)" },
+    { id: "c", label: "Cloud Native Application Delivery (16%)" },
+    { id: "d", label: "Cloud Native Architecture (12%)" },
+  ]}
+  correctId="b"
+  feedback={<p>Kubernetes Fundamentals is the heaviest domain at 44%, covering core concepts, administration, scheduling, and containerization. This is where nearly half your exam questions will come from.</p>}
+/>
+
+<Checkpoint
+  id="m01-q03"
+  question="According to the CNCF definition, which of the following is NOT one of the five pillars of cloud native?"
+  choices={[
+    { id: "a", label: "Containers" },
+    { id: "b", label: "Virtual machines" },
+    { id: "c", label: "Declarative APIs" },
+    { id: "d", label: "Immutable infrastructure" },
+  ]}
+  correctId="b"
+  feedback={<p>The five pillars of cloud native are containers, microservices, service meshes, immutable infrastructure, and declarative APIs. Virtual machines are not part of the CNCF definition — cloud native specifically leverages containers as the packaging mechanism.</p>}
+/>
+
+<Checkpoint
+  id="m01-q04"
+  question="What is the main disadvantage of a monolithic architecture that microservices solve?"
+  choices={[
+    { id: "a", label: "Monoliths cannot be containerized" },
+    { id: "b", label: "Monoliths require scaling the entire application even when only one component is under load" },
+    { id: "c", label: "Monoliths cannot use declarative APIs" },
+    { id: "d", label: "Monoliths cannot run on Kubernetes" },
+  ]}
+  correctId="b"
+  feedback={<p>The core scaling limitation of monoliths is all-or-nothing scaling. You cannot scale just the overloaded component — you must scale the entire application. Microservices solve this by allowing each service to scale independently. Note that monoliths <em>can</em> be containerized and run on Kubernetes — the architecture just does not take advantage of independent scaling.</p>}
+/>
+
+<Checkpoint
+  id="m01-q05"
+  question="What is the Container Runtime Interface (CRI)?"
+  choices={[
+    { id: "a", label: "A CLI tool for building container images" },
+    { id: "b", label: "A standard API that allows the kubelet to communicate with any compatible container runtime" },
+    { id: "c", label: "A Docker plugin for connecting to Kubernetes" },
+    { id: "d", label: "A monitoring tool for container resource usage" },
+  ]}
+  correctId="b"
+  feedback={<p>The CRI is a gRPC-based plugin API that defines how the kubelet (the Kubernetes node agent) communicates with container runtimes. Any runtime that implements CRI can work with Kubernetes. This is what makes Kubernetes runtime-agnostic — containerd, CRI-O, or any other compliant runtime can be swapped in.</p>}
+/>
+
+<Checkpoint
+  id="m01-q06"
+  question="Why was Docker support (dockershim) removed from Kubernetes in version 1.24?"
+  choices={[
+    { id: "a", label: "Docker containers are incompatible with Kubernetes pods" },
+    { id: "b", label: "Docker images use a proprietary format that Kubernetes cannot read" },
+    { id: "c", label: "Docker does not implement the CRI — Kubernetes used a built-in shim that added unnecessary complexity" },
+    { id: "d", label: "Docker, Inc. asked Kubernetes to remove it" },
+  ]}
+  correctId="c"
+  feedback={<p>Docker does not implement the Container Runtime Interface. Kubernetes maintained a built-in adapter called "dockershim" to translate between the CRI and Docker's API. This added complexity and maintenance burden. Since containerd (the runtime engine inside Docker) does implement CRI and can be used directly, the shim was unnecessary. Removing it simplified Kubernetes without affecting workloads — existing images are OCI-standard and work with any compliant runtime.</p>}
+/>
+
+<Checkpoint
+  id="m01-q07"
+  question="Which of the following was a key reason Kubernetes won over Docker Swarm as the industry-standard orchestrator?"
+  choices={[
+    { id: "a", label: "Kubernetes was simpler to set up than Docker Swarm" },
+    { id: "b", label: "Kubernetes had a pluggable, extensible architecture and vendor-neutral governance under the CNCF" },
+    { id: "c", label: "Docker Swarm could not run containerized applications" },
+    { id: "d", label: "Kubernetes was the first container orchestrator ever created" },
+  ]}
+  correctId="b"
+  feedback={<p>Kubernetes won due to its extensible architecture (CRI, CNI, CSI, CRDs), vendor-neutral governance under the CNCF, universal cloud provider adoption, and a massive community ecosystem. Docker Swarm was actually <em>simpler</em> to set up — simplicity was its advantage, not Kubernetes'. Both could run containerized applications, and Kubernetes was not the first orchestrator (Mesos and Swarm predated it in some forms).</p>}
+/>
+
+<Checkpoint
+  id="m01-q08"
+  question="An organization currently uses Docker to build container images. They are migrating to a Kubernetes cluster that uses containerd as its runtime. What changes need to be made to their existing container images?"
+  choices={[
+    { id: "a", label: "All images must be rebuilt using containerd's build tool" },
+    { id: "b", label: "Images must be converted from Docker format to containerd format" },
+    { id: "c", label: "No changes — container images follow the OCI standard and work with any compliant runtime" },
+    { id: "d", label: "Images must be re-pushed to a containerd-compatible registry" },
+  ]}
+  correctId="c"
+  feedback={<p>Container images built with Docker follow the OCI (Open Container Initiative) standard. This means they can be pulled from any OCI-compliant registry and run by any OCI-compliant runtime, including containerd and CRI-O. No rebuilding, conversion, or re-pushing is needed. Docker is a build tool — the images it produces are standard artifacts.</p>}
+/>
+
+</LessonFrame>

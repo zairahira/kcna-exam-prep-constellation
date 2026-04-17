@@ -1,0 +1,118 @@
+import LessonFrame from "@/components/LessonFrame";
+import Remember from "@/components/Remember";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Containers and runtimes"
+  domain="Cloud Native Architecture"
+  mustLearn={[
+    "How containers differ from virtual machines",
+    "What container images are and how layers work",
+    "What the Container Runtime Interface (CRI) is",
+    "The difference between Docker, containerd, and CRI-O",
+  ]}
+>
+
+## Containers: a quick review
+
+You already have basic container knowledge, so this lesson is a focused review that connects what you know to what the KCNA expects. The exam assumes a solid understanding of containers as the building block of everything in Kubernetes.
+
+A **container** is an isolated process that runs on a shared operating system kernel. Unlike a virtual machine, a container does not include its own kernel or full OS — it shares the host's kernel and uses Linux features like **namespaces** (for isolation) and **cgroups** (for resource limits) to create the illusion of a separate environment.
+
+This makes containers significantly lighter than VMs:
+
+| | Virtual Machine | Container |
+|---|---|---|
+| **Includes** | Full OS + kernel + app | App + dependencies only |
+| **Startup time** | Minutes | Seconds |
+| **Size** | Gigabytes | Megabytes |
+| **Isolation** | Hardware-level (hypervisor) | Process-level (kernel features) |
+| **Density** | ~10s per host | ~100s per host |
+
+The lightweight nature of containers is what makes it practical to run hundreds of them across a cluster — which is exactly what Kubernetes does.
+
+## Container images
+
+A **container image** is a read-only template that contains everything needed to run a container: the application binary, libraries, configuration files, and environment variables.
+
+Images are built in **layers**. Each instruction in a Dockerfile (or Containerfile) creates a new layer:
+
+<TerminalBlock label="Dockerfile example">
+{`FROM node:20-alpine        # Base layer: Node.js runtime
+WORKDIR /app               # Sets working directory
+COPY package*.json ./      # Layer: dependency manifests
+RUN npm ci --production    # Layer: installed dependencies
+COPY . .                   # Layer: application code
+CMD ["node", "server.js"]  # Default command`}
+</TerminalBlock>
+
+Layers are **cached and shared** between images. If two images both use `node:20-alpine` as their base, that layer is stored only once on disk. This makes image distribution efficient — when you pull an updated image, only the changed layers need to be downloaded.
+
+Images are stored in **container registries**. Docker Hub is the most well-known public registry, but there are many others: GitHub Container Registry (ghcr.io), Amazon ECR, Google Artifact Registry, and private registries that organizations run internally.
+
+## Container runtimes
+
+A **container runtime** is the software that actually creates and runs containers on a host. When you hear people say "Docker runs containers," the runtime is the component doing the actual work.
+
+There are two levels of container runtimes:
+
+### High-level runtimes
+
+High-level runtimes manage the full container lifecycle: pulling images, creating containers, managing storage, and networking. The two you need to know for the KCNA are:
+
+**containerd** — Originally developed as part of Docker, containerd was extracted into a standalone project and donated to the CNCF. It is now the default container runtime in most Kubernetes distributions. containerd handles image management, container execution, and storage, and it delegates the low-level work of creating the actual Linux container to a low-level runtime.
+
+**CRI-O** — Built specifically for Kubernetes, CRI-O is a lightweight runtime that implements the Container Runtime Interface (explained below). It is the default in Red Hat OpenShift and some other distributions. CRI-O does less than containerd by design — it only does what Kubernetes needs and nothing more.
+
+### Low-level runtimes
+
+Low-level runtimes do the actual work of creating Linux containers using kernel features. **runc** is the standard low-level runtime used by both containerd and CRI-O. It creates the namespaces, sets up cgroups, and starts the container process.
+
+You rarely interact with runc directly. It is called by the high-level runtime on your behalf.
+
+## The Container Runtime Interface (CRI)
+
+The **Container Runtime Interface (CRI)** is a plugin API that Kubernetes uses to communicate with container runtimes. This is a critical concept for the KCNA.
+
+Before CRI existed, Kubernetes had Docker-specific code baked directly into the kubelet (the Kubernetes agent running on every node). This tight coupling meant that supporting a different runtime required changes to Kubernetes itself.
+
+CRI solved this by defining a standard gRPC interface. Any runtime that implements CRI can work with Kubernetes without modifications. The kubelet talks to the CRI, and the runtime handles the rest:
+
+```
+kubelet → CRI → containerd → runc → container
+kubelet → CRI → CRI-O → runc → container
+```
+
+This is why Kubernetes was able to **remove built-in Docker support** (called "dockershim") in version 1.24. Docker itself does not implement CRI. However, **containerd** — the runtime that Docker uses internally — does implement CRI. So when Kubernetes dropped Docker support, workloads continued to run fine because containerd was doing the actual work all along.
+
+## Docker vs containerd: what changed?
+
+This is a common source of confusion and a likely KCNA topic.
+
+**Docker** is a developer tool that includes a CLI, a daemon, image building, networking, and containerd as its runtime. It is designed for humans building and running containers on their workstations.
+
+**containerd** is the runtime engine inside Docker. It handles the core work of managing container lifecycle and images.
+
+When you run `docker run nginx`, Docker's CLI talks to the Docker daemon, which talks to containerd, which talks to runc. For Kubernetes, the Docker daemon and CLI layers were unnecessary overhead. Kubernetes only needed containerd.
+
+<TerminalBlock label="checking which runtime a Kubernetes node uses" prompt="$" command="kubectl get nodes -o wide">
+{`NAME     STATUS   ROLES           AGE   VERSION   CONTAINER-RUNTIME
+node-1   Ready    control-plane   10d   v1.30.0   containerd://1.7.13
+node-2   Ready    <none>          10d   v1.30.0   containerd://1.7.13`}
+</TerminalBlock>
+
+The `CONTAINER-RUNTIME` column shows `containerd://1.7.13` — this is what modern Kubernetes clusters use. You will not see `docker://` on clusters running Kubernetes 1.24 or later.
+
+For the exam: you do not need to know how to configure runtimes. You need to know that CRI exists, that containerd and CRI-O are the standard runtimes, and why Docker support was removed from Kubernetes.
+
+<Remember
+  points={[
+    "Containers share the host kernel and use namespaces + cgroups for isolation — lighter than VMs",
+    "Container images are built in layers, cached, and stored in registries",
+    "The CRI (Container Runtime Interface) is the standard API between the kubelet and the container runtime",
+    "containerd and CRI-O are the two main CRI-compliant runtimes used in Kubernetes",
+    "Docker was removed from Kubernetes in v1.24 because it does not implement CRI — containerd (which Docker uses internally) does",
+  ]}
+/>
+
+</LessonFrame>

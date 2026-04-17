@@ -1,0 +1,105 @@
+import LessonFrame from "@/components/LessonFrame";
+import DebugPuzzle from "@/components/puzzle/DebugPuzzle";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Debug: Cloud Native Essentials"
+  domain="Cloud Native Architecture"
+  mustLearn={[
+    "How to identify architectural mismatches in cloud native systems",
+    "How to diagnose container runtime issues from error output",
+  ]}
+>
+
+The following scenarios test your ability to reason about cloud native concepts, container runtimes, and architectural choices. Read each scenario carefully, examine the artifact, and select the best answer.
+
+<DebugPuzzle
+  id="cn-debug-01"
+  syllabusIds={["CNA-01"]}
+  prompt={<p>A team is running a monolithic e-commerce application. The checkout page experiences traffic spikes during flash sales, causing the entire application to become slow — including the product catalog and user dashboard, which are not under heavy load. The team wants to fix this. A junior engineer suggests "just adding more servers." What is the real problem?</p>}
+  artifact={
+    <TerminalBlock label="current architecture">
+{`┌──────────────────────────────────────────┐
+│           e-commerce-monolith            │
+│                                          │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ │
+│  │ Catalog  │ │ Checkout │ │Dashboard │ │
+│  │ Module   │ │ Module   │ │ Module   │ │
+│  └──────────┘ └──────────┘ └──────────┘ │
+│                                          │
+│         Single process, single DB        │
+└──────────────────────────────────────────┘
+
+Deployed as: 1 container per server
+Scaling: add more identical servers`}
+    </TerminalBlock>
+  }
+  choices={[
+    { id: "a", label: "The application needs a faster database" },
+    { id: "b", label: "The monolithic architecture forces all-or-nothing scaling — the team cannot scale checkout independently" },
+    { id: "c", label: "The servers do not have enough RAM" },
+    { id: "d", label: "The team should switch to virtual machines instead of containers" },
+  ]}
+  correctId="b"
+  explanation={
+    <p>
+      The core issue is architectural. In a monolith, all modules run in the same process and are deployed as a single unit. You cannot scale just the checkout module — you have to scale the entire application. This wastes resources because catalog and dashboard do not need more capacity. A microservice architecture would allow the checkout service to scale independently. Adding more identical servers (the junior engineer's suggestion) does scale the monolith, but it scales <em>everything</em> equally, wasting resources on modules that are not under load.
+    </p>
+  }
+/>
+
+<DebugPuzzle
+  id="cn-debug-02"
+  syllabusIds={["CNA-02"]}
+  prompt={<p>After upgrading a Kubernetes cluster from version 1.23 to 1.24, a node fails to join the cluster. The kubelet logs show the following error. What is the cause?</p>}
+  artifact={
+    <TerminalBlock label="kubelet logs on the failing node">
+{`E0415 14:22:07.839211    1842 server.go:302] "Failed to run kubelet" err=
+  "validate service connection: CRI v1 runtime API is not implemented for
+  endpoint \"unix:///var/run/dockershim.sock\": rpc error: code =
+  Unimplemented desc = unknown service runtime.v1.RuntimeService"`}
+    </TerminalBlock>
+  }
+  choices={[
+    { id: "a", label: "The container runtime (containerd) is not installed on this node" },
+    { id: "b", label: "The kubelet is still configured to use dockershim, which was removed in Kubernetes 1.24" },
+    { id: "c", label: "The node's Docker version is too old to support CRI v1" },
+    { id: "d", label: "The Kubernetes API server is unreachable from this node" },
+  ]}
+  correctId="b"
+  explanation={
+    <p>
+      The error message shows the kubelet trying to connect to <code>dockershim.sock</code> — the built-in Docker integration that Kubernetes removed in version 1.24. The fix is to install a CRI-compliant runtime (containerd or CRI-O) and update the kubelet configuration to point to the new runtime socket (typically <code>/run/containerd/containerd.sock</code>). This is not about Docker's version or containerd being missing — the node is still configured to use an interface that no longer exists.
+    </p>
+  }
+/>
+
+<DebugPuzzle
+  id="cn-debug-03"
+  syllabusIds={["CNA-01", "CNA-02"]}
+  prompt={<p>A team is evaluating container runtimes for their new Kubernetes cluster. An engineer claims: "We must use Docker as our container runtime because all our images are Docker images." Is this claim correct?</p>}
+  artifact={
+    <TerminalBlock label="team's current image build pipeline">
+{`# Current CI pipeline
+docker build -t myapp:v2 .
+docker push registry.internal/myapp:v2
+
+# Kubernetes deployment references:
+image: registry.internal/myapp:v2`}
+    </TerminalBlock>
+  }
+  choices={[
+    { id: "a", label: "Correct — Docker images can only run on Docker" },
+    { id: "b", label: "Incorrect — container images follow the OCI standard and can be run by any CRI-compliant runtime" },
+    { id: "c", label: "Correct — containerd cannot pull images from Docker-compatible registries" },
+    { id: "d", label: "Incorrect — but the images would need to be rebuilt using containerd's build tool" },
+  ]}
+  correctId="b"
+  explanation={
+    <p>
+      "Docker images" are actually <strong>OCI (Open Container Initiative) images</strong>. The OCI defines a standard format for container images and runtimes. Images built with <code>docker build</code> conform to this standard and can be run by any OCI-compliant runtime, including containerd and CRI-O. The images do not need to be rebuilt. The registry protocol is also standardized — containerd and CRI-O can pull from Docker Hub, GitHub Container Registry, or any OCI-compliant registry. Docker is a build tool, not a requirement for running the images it produces.
+    </p>
+  }
+/>
+
+</LessonFrame>

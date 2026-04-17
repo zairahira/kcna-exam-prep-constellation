@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "KCNA Exam Prep",
   description:
-    "Comprehensive KCNA preparation - 12 modules covering all 5 exam domains with debug challenges, reviews, and quizzes.",
+    "Comprehensive KCNA preparation - 13 modules covering all 4 exam domains with debug challenges, reviews, and quizzes.",
 };
 
 export default function RootLayout({

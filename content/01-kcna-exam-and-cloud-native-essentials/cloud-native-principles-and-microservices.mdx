@@ -1,0 +1,118 @@
+import LessonFrame from "@/components/LessonFrame";
+import Remember from "@/components/Remember";
+
+<LessonFrame
+  lessonTitle="Cloud native principles and microservices"
+  domain="Cloud Native Architecture"
+  mustLearn={[
+    "The CNCF definition of cloud native",
+    "The key principles that make a system cloud native",
+    "The difference between monolithic and microservice architectures",
+    "Trade-offs of each architectural approach",
+  ]}
+>
+
+## What does "cloud native" mean?
+
+The term "cloud native" is used constantly in the Kubernetes ecosystem, so it is important to understand what it actually means rather than treating it as a buzzword.
+
+The **Cloud Native Computing Foundation (CNCF)** provides the definitive definition:
+
+> Cloud native technologies empower organizations to build and run scalable applications in modern, dynamic environments such as public, private, and hybrid clouds. Containers, service meshes, microservices, immutable infrastructure, and declarative APIs exemplify this approach.
+
+Let's break this down into its core principles.
+
+## The five pillars of cloud native
+
+The CNCF definition highlights five key technologies and patterns:
+
+**1. Containers**
+
+Containers package an application and its dependencies into a single, portable unit. Unlike virtual machines, containers share the host operating system's kernel, which makes them lightweight and fast to start. You already have experience with containers — this course will build on that foundation and connect containers to how Kubernetes manages them.
+
+**2. Microservices**
+
+Instead of deploying one large application (a monolith), cloud native systems are typically composed of many small, independently deployable services. Each microservice owns a specific piece of business logic and communicates with other services over well-defined APIs. We will cover this in depth later in this lesson.
+
+**3. Service meshes**
+
+A service mesh is a dedicated infrastructure layer that manages communication between microservices. It handles concerns like load balancing, encryption (mutual TLS), and observability without requiring changes to application code. Istio and Linkerd are popular service mesh implementations. You will learn about service meshes in Module 11.
+
+**4. Immutable infrastructure**
+
+In a cloud native system, you do not patch running servers. Instead, you build a new container image with the changes and replace the old one. This is the "immutable" part — once deployed, infrastructure components are not modified in place. If something needs to change, you deploy a new version. This approach eliminates configuration drift and makes rollbacks straightforward.
+
+**5. Declarative APIs**
+
+Instead of telling the system *how* to reach a desired state (imperative), you declare *what* the desired state should be, and the system figures out how to get there. Kubernetes is built entirely around this principle. You write a manifest that says "I want three replicas of this container," and Kubernetes continuously works to make that true.
+
+## Why cloud native matters
+
+Cloud native is not just a set of technologies — it is an approach that enables specific operational capabilities:
+
+- **Loosely coupled systems** — components can be updated, scaled, or replaced independently
+- **Resilience** — the system can tolerate individual component failures without total outage
+- **Scalability** — resources can be added or removed based on demand
+- **Observability** — the system exposes enough information to understand its internal state
+- **Frequent, reliable releases** — small, independent deployments reduce the risk of each change
+
+These capabilities matter because modern applications need to handle unpredictable load, recover from failures automatically, and ship updates without downtime.
+
+## Monolithic architecture
+
+A **monolith** is an application where all functionality is built, deployed, and scaled as a single unit. A typical monolith might have user authentication, order processing, inventory management, and notification sending all within one codebase and one deployment artifact.
+
+**Advantages of monoliths:**
+
+- **Simpler to develop initially** — one codebase, one build, one deployment
+- **Easier to test end-to-end** — all functionality runs in a single process
+- **Straightforward debugging** — no network calls between components; stack traces are complete
+- **Lower operational overhead** — one application to monitor and manage
+
+**Disadvantages of monoliths:**
+
+- **Scaling is all-or-nothing** — you cannot scale just the part of the application that is under heavy load; you must scale the entire thing
+- **Deployments are high-risk** — a change to one feature requires redeploying the entire application
+- **Technology lock-in** — the entire application must use the same language, framework, and runtime
+- **Team coupling** — as the codebase grows, teams step on each other's work
+
+## Microservice architecture
+
+A **microservice architecture** decomposes the application into small, independently deployable services. Each service runs in its own process (typically its own container), owns its own data, and communicates with other services through APIs — usually HTTP/REST or gRPC.
+
+Using the same example: user authentication would be one service, order processing another, inventory another, and notifications another. Each can be developed, deployed, and scaled independently.
+
+**Advantages of microservices:**
+
+- **Independent scaling** — scale only the services that need more capacity
+- **Independent deployment** — ship changes to one service without touching others
+- **Technology flexibility** — each service can use the language and database best suited to its task
+- **Team autonomy** — small teams own specific services end-to-end
+
+**Disadvantages of microservices:**
+
+- **Distributed system complexity** — network calls can fail, latency adds up, and debugging spans multiple services
+- **Data consistency challenges** — each service owns its own data, so transactions that span services require patterns like sagas or eventual consistency
+- **Operational overhead** — more services means more things to deploy, monitor, and troubleshoot
+- **Service discovery and communication** — services need to find and talk to each other reliably
+
+## When to use which
+
+There is no universal answer. Monoliths are a perfectly valid choice for small teams, early-stage projects, or applications where the domain is well-understood and unlikely to require independent scaling of components.
+
+Microservices shine when teams are large, components have very different scaling needs, or you need to deploy parts of the system independently and frequently.
+
+Many successful systems start as monoliths and evolve toward microservices as the team and product grow. This is often called the "monolith first" approach.
+
+For the KCNA exam, you need to understand both architectures, their trade-offs, and why microservices are the natural fit for Kubernetes (which was designed to orchestrate many independent containers).
+
+<Remember
+  points={[
+    "Cloud native is defined by five pillars: containers, microservices, service meshes, immutable infrastructure, and declarative APIs",
+    "Monoliths are simpler to develop and debug, but harder to scale and deploy independently",
+    "Microservices enable independent scaling and deployment, but introduce distributed system complexity",
+    "Kubernetes was designed to orchestrate microservices — many small, independent containers running across a cluster",
+  ]}
+/>
+
+</LessonFrame>

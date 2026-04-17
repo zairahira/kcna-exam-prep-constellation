@@ -1,0 +1,112 @@
+import LessonFrame from "@/components/LessonFrame";
+import Remember from "@/components/Remember";
+
+<LessonFrame
+  lessonTitle="Container orchestration: from Swarm to Kubernetes"
+  domain="Cloud Native Architecture"
+  mustLearn={[
+    "What container orchestration is and what problems it solves",
+    "How Docker Swarm approached orchestration",
+    "Why Docker Swarm lost to Kubernetes",
+    "The origin of Kubernetes and why it became the standard",
+  ]}
+>
+
+## The orchestration problem
+
+Running a single container on your laptop is simple. Running hundreds of containers across dozens of servers in production is a fundamentally different problem. That is the problem container orchestration solves.
+
+When you move from a single container to a distributed system, you need answers to questions that do not exist at the single-container level:
+
+- **Scheduling** — Which server should this container run on? Which one has enough CPU and memory?
+- **Scaling** — Traffic is spiking. How do I automatically run more copies of a container?
+- **Self-healing** — A container crashed. How do I automatically restart it? A server went down. How do I move its containers to healthy servers?
+- **Networking** — How do containers on different servers find and talk to each other?
+- **Load balancing** — How do I distribute traffic across multiple copies of the same container?
+- **Rolling updates** — How do I deploy a new version of my application without downtime?
+- **Configuration** — How do I inject environment-specific settings into containers without rebuilding the image?
+
+A **container orchestrator** is a system that answers all of these questions. It manages the lifecycle of containers across a cluster of machines, making the cluster behave as a single logical system.
+
+## Docker Swarm
+
+**Docker Swarm** was Docker's built-in orchestration solution. It extended Docker from a single-host tool to a multi-host clustering system.
+
+### How Swarm worked
+
+Swarm mode was integrated directly into the Docker daemon starting with Docker 1.12 (2016). If you already knew Docker, you could set up a Swarm cluster with a few commands:
+
+- `docker swarm init` on the first node to create the cluster
+- `docker swarm join` on additional nodes to join them
+- `docker service create` to deploy replicated services across the cluster
+
+Swarm used the same Docker CLI, the same Docker Compose files (with some extensions), and the same Docker networking model. This tight integration was its biggest selling point — the learning curve was gentle if you already used Docker.
+
+### What Swarm did well
+
+- **Simplicity** — minimal setup, no external dependencies, everything built into Docker
+- **Familiar interface** — the same `docker` CLI developers already knew
+- **Built-in security** — mutual TLS between nodes was automatic, with certificate rotation
+- **Rolling updates** — native support for updating services without downtime
+
+### Why Swarm fell short
+
+Despite its simplicity, Swarm had significant limitations that became apparent as organizations tried to use it for large-scale production workloads:
+
+**Limited extensibility** — Swarm's feature set was controlled by Docker, Inc. There was no plugin system or API that allowed the community to extend its capabilities. If Docker did not build a feature, you could not add it yourself.
+
+**Basic scheduling** — Swarm's scheduler was simple: it spread containers across nodes based on resource availability. It lacked advanced scheduling features like affinity rules, taints, tolerations, or custom scheduling policies.
+
+**Networking constraints** — Swarm's overlay networking worked for basic scenarios but struggled with complex networking requirements. There was no equivalent of Kubernetes network policies, and the networking model was not pluggable.
+
+**Smaller ecosystem** — Because Swarm was a Docker-only project, the ecosystem of tools, integrations, and community contributions was limited compared to the rapidly growing Kubernetes ecosystem.
+
+**Vendor lock-in concerns** — Swarm was a product of a single company (Docker, Inc.). Organizations were cautious about building critical infrastructure on a platform controlled by one vendor.
+
+## The rise of Kubernetes
+
+**Kubernetes** (often abbreviated as **K8s**) was open-sourced by Google in 2014. Its design was heavily influenced by **Borg**, the internal container orchestration system that Google had used for over a decade to run its own production workloads at massive scale.
+
+### Why Kubernetes won
+
+Several factors combined to make Kubernetes the industry standard:
+
+**Battle-tested design** — Kubernetes inherited lessons from Google running containers in production for 15 years. Concepts like declarative configuration, reconciliation loops, and self-healing were proven patterns, not theoretical ideas.
+
+**Extensible architecture** — Kubernetes was designed around a pluggable architecture from the start. The Container Runtime Interface (CRI), Container Network Interface (CNI), and Container Storage Interface (CSI) let anyone swap out core components. Custom Resource Definitions (CRDs) let anyone extend the Kubernetes API itself. This extensibility attracted a massive ecosystem of tools and integrations.
+
+**Vendor-neutral governance** — In 2015, Google donated Kubernetes to the newly formed **Cloud Native Computing Foundation (CNCF)**, a vendor-neutral foundation under the Linux Foundation. This removed the single-vendor concern that affected Docker Swarm. Kubernetes is governed by the community, not by any single company.
+
+**Cloud provider adoption** — Every major cloud provider (AWS, Google Cloud, Microsoft Azure) offers a managed Kubernetes service (EKS, GKE, AKS). This made Kubernetes the de facto standard across cloud platforms and reduced the operational burden of running clusters.
+
+**Massive community** — Kubernetes has one of the largest open-source communities in the world. Thousands of contributors, hundreds of companies, and a rich ecosystem of projects (Helm, Prometheus, Istio, ArgoCD, and many more) all build on top of Kubernetes.
+
+## Where Docker Swarm stands today
+
+Docker Swarm still exists and works, but it is no longer actively competing with Kubernetes. Docker, Inc. itself pivoted to focus on developer tooling (Docker Desktop, Docker Hub) rather than orchestration. Most organizations that started with Swarm have migrated to Kubernetes.
+
+For the KCNA exam, you should understand that Swarm was a simpler alternative that Docker offered, and why the industry chose Kubernetes: extensibility, vendor-neutral governance, cloud provider support, and a massive ecosystem.
+
+## Key Kubernetes concepts preview
+
+In the next module, you will dive deep into Kubernetes architecture. Here are the three foundational concepts you will build everything else on:
+
+**Cluster** — A set of machines (physical or virtual) that Kubernetes manages as a single unit. A cluster has a control plane (the brain) and one or more worker nodes (where your containers run).
+
+**Node** — A single machine in the cluster. Each node runs a container runtime and a Kubernetes agent called the kubelet.
+
+**Pod** — The smallest deployable unit in Kubernetes. A pod wraps one or more containers that share networking and storage. You do not run individual containers in Kubernetes — you run pods.
+
+These three concepts — cluster, node, pod — form the vocabulary for everything that follows.
+
+<Remember
+  points={[
+    "Container orchestration solves scheduling, scaling, self-healing, networking, and rolling updates across a cluster",
+    "Docker Swarm was simpler but lacked extensibility, advanced scheduling, and a large ecosystem",
+    "Kubernetes was open-sourced by Google in 2014, informed by 15 years of running Borg in production",
+    "Kubernetes won due to its extensible architecture, vendor-neutral CNCF governance, cloud provider support, and massive community",
+    "The three foundational Kubernetes concepts are cluster, node, and pod",
+  ]}
+/>
+
+</LessonFrame>

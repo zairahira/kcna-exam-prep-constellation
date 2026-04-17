@@ -26,7 +26,6 @@ const domainColorMap: Record<string, string> = {
   "Kubernetes Fundamentals": "text-highlight border-highlight bg-highlight/5",
   "Container Orchestration": "text-accent border-accent bg-accent/5",
   "Cloud Native Architecture": "text-warning border-warning bg-warning/5",
-  "Cloud Native Observability": "text-success border-success bg-success/5",
   "Cloud Native Application Delivery": "text-danger border-danger bg-danger/5",
 };
 
@@ -105,7 +104,7 @@ export default function LandingContent() {
 
           <div className="flex flex-wrap gap-x-12 gap-y-4 mb-10 text-sm mono text-muted">
             <div className="flex items-center gap-2">
-              <span className="text-success">✔</span> 12 Learning Modules
+              <span className="text-success">✔</span> {modules.length} Learning Modules
             </div>
             <div className="flex items-center gap-2">
               <span className="text-success">✔</span> Hands-on Debugging
@@ -206,8 +205,8 @@ export default function LandingContent() {
           </div>
           <h3 className="font-bold text-xl mb-3">Precision Quizzes</h3>
           <p className="text-sm text-fg-secondary leading-relaxed">
-            End-of-module assessments mapped to exam domains. Track your 
-            readiness across the 5 core syllabus areas.
+            End-of-module assessments mapped to exam domains. Track your
+            readiness across the 4 core syllabus areas.
           </p>
         </div>
       </section>

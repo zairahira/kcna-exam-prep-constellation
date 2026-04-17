@@ -1,0 +1,105 @@
+import LessonFrame from "@/components/LessonFrame";
+import Remember from "@/components/Remember";
+
+<LessonFrame
+  lessonTitle="The KCNA certification"
+  domain="Cloud Native Architecture"
+  mustLearn={[
+    "What the KCNA certification is and who it is for",
+    "The exam format, duration, and passing score",
+    "The four exam domains and their percentage weights",
+    "How this course maps to each domain",
+  ]}
+>
+
+## What is the KCNA?
+
+The **Kubernetes and Cloud Native Associate (KCNA)** is an entry-level certification from the **Cloud Native Computing Foundation (CNCF)** and the **Linux Foundation**. It validates that you have a foundational understanding of Kubernetes and the broader cloud native ecosystem.
+
+The KCNA is designed for people who are early in their cloud native journey. It is not a hands-on performance-based exam like the CKA or CKADit focuses on conceptual knowledge, terminology, and the ability to reason about how Kubernetes and cloud native technologies work together.
+
+If you are planning to eventually pursue the **Certified Kubernetes Administrator (CKA)** or **Certified Kubernetes Application Developer (CKAD)**, the KCNA is an excellent first step. It builds the vocabulary and mental models you will rely on in those more advanced certifications.
+
+## Exam format
+
+The KCNA exam has a straightforward structure:
+
+| Detail | Value |
+|---|---|
+| **Questions** | 60 multiple-choice |
+| **Duration** | 90 minutes |
+| **Passing score** | 75% (45 out of 60) |
+| **Delivery** | Online, proctored |
+| **Validity** | 2 years from the date you pass |
+| **Cost** | $250 USD (includes one free retake) |
+
+You will take the exam remotely through a proctored browser. No terminal, no cluster access, no hands-on tasks. Every question is multiple-choice, which means you are being tested on your ability to **recognize correct answers**, not type commands from memory.
+
+That said, do not mistake "multiple-choice" for "easy." The exam covers a broad surface area, and many questions require you to understand how components interact, not just recall definitions.
+
+## The four exam domains
+
+The KCNA tests knowledge across four domains. Each domain carries a specific weight that determines how many questions come from that topic:
+
+| Domain | Weight | What it covers |
+|---|---|---|
+| **Kubernetes Fundamentals** | 44% | Core concepts, administration, scheduling, containerization |
+| **Container Orchestration** | 28% | Networking, security, troubleshooting, storage |
+| **Cloud Native Application Delivery** | 16% | CI/CD, GitOps, Helm, Kustomize, debugging |
+| **Cloud Native Architecture** | 12% | Observability, CNCF ecosystem, community, cloud native principles |
+
+**Kubernetes Fundamentals** dominates the exam at 44%. This means roughly 26 of your 60 questions will come from core Kubernetes concepts: how the cluster is architected, how pods and workloads function, how scheduling works, and how containers are managed. This is where you should invest the most study time.
+
+**Container Orchestration** at 28% covers the operational side: how networking connects your workloads, how you secure them, how you troubleshoot failures, and how storage works in Kubernetes.
+
+**Cloud Native Application Delivery** at 16% focuses on how applications get from source code to a running cluster. This includes CI/CD pipelines, GitOps workflows, and packaging tools like Helm and Kustomize.
+
+**Cloud Native Architecture** at 12% is the broadest domain conceptually. It covers observability (monitoring, logging, tracing), the CNCF project landscape, open standards, and how the Kubernetes community governs itself.
+
+## How this course maps to the exam
+
+This course is structured as **13 modules** that progressively build from foundational concepts to advanced topics. Here is how they map to the four exam domains:
+
+**Kubernetes Fundamentals (44%)**
+- Module 2: Kubernetes Architecture
+- Module 3: Working with kubectl
+- Module 4: Pods and Workloads
+- Module 5: Organizing Resources
+- Module 8: Scheduling and Autoscaling
+- Module 10: The Kubernetes API and Extensibility
+
+**Container Orchestration (28%)**
+- Module 6: Networking and Services
+- Module 7: Storage
+- Module 9: Kubernetes Security
+
+**Cloud Native Application Delivery (16%)**
+- Module 13: Cloud Native Application Delivery
+
+**Cloud Native Architecture (12%)**
+- Module 1: The KCNA Exam and Cloud Native Essentials (this module)
+- Module 11: Cloud Native Architecture
+- Module 12: Cloud Native Observability
+
+The course is sequenced so that each module builds on concepts from earlier modules. You should work through them in order. Every module includes lessons, a debug challenge, a review, and a quiz.
+
+## Tips for exam preparation
+
+**Study proportionally.** Spend roughly 44% of your study time on Kubernetes Fundamentals. It is tempting to spend equal time on every domain, but the exam weights tell you where the points are.
+
+**Understand, do not memorize.** The exam tests whether you understand how things work, not whether you have memorized command flags. Focus on *why* a component exists and *how* it interacts with other components.
+
+**Use the debug challenges.** Each module in this course includes a debug scenario that simulates the kind of reasoning the exam requires. These are not optional extras — they are practice for how exam questions are structured.
+
+**Review before the exam.** Each module ends with a "What you need to remember" section. Before taking the exam, review these sections across all modules for a concentrated refresher.
+
+<Remember
+  points={[
+    "The KCNA is a 60-question, 90-minute, multiple-choice exam with a 75% passing score",
+    "Kubernetes Fundamentals is the heaviest domain at 44% — prioritize it",
+    "The four domains are: Kubernetes Fundamentals (44%), Container Orchestration (28%), Cloud Native Application Delivery (16%), Cloud Native Architecture (12%)",
+    "This course covers all four domains across 13 progressive modules",
+  ]}
+/>
+
+</LessonFrame>

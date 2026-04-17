@@ -1,25 +1,25 @@
 {
   "modules": [
     {
-      "slug": "01-cloud-native-foundations",
-      "title": "Cloud Native Foundations",
+      "slug": "01-kcna-exam-and-cloud-native-essentials",
+      "title": "The KCNA Exam and Cloud Native Essentials",
       "domain": "Cloud Native Architecture",
-      "weight": "22%",
+      "weight": "12%",
       "steps": [
-        { "slug": "what-is-cloud-native", "title": "What is cloud native?", "type": "lesson" },
-        { "slug": "containers-and-images", "title": "Containers and container images", "type": "lesson" },
-        { "slug": "container-runtimes", "title": "Container runtimes", "type": "lesson" },
-        { "slug": "microservices-vs-monoliths", "title": "Microservices vs monoliths", "type": "lesson" },
-        { "slug": "debug", "title": "Cloud Native Foundations", "type": "debug" },
-        { "slug": "review", "title": "Cloud Native Foundations", "type": "review" },
-        { "slug": "quiz", "title": "Cloud Native Foundations", "type": "quiz" }
+        { "slug": "the-kcna-certification", "title": "The KCNA certification", "type": "lesson" },
+        { "slug": "cloud-native-principles-and-microservices", "title": "Cloud native principles and microservices", "type": "lesson" },
+        { "slug": "containers-and-runtimes", "title": "Containers and runtimes", "type": "lesson" },
+        { "slug": "container-orchestration", "title": "Container orchestration: from Swarm to Kubernetes", "type": "lesson" },
+        { "slug": "debug", "title": "Cloud Native Essentials", "type": "debug" },
+        { "slug": "review", "title": "Cloud Native Essentials", "type": "review" },
+        { "slug": "quiz", "title": "Cloud Native Essentials", "type": "quiz" }
       ]
     },
     {
       "slug": "02-kubernetes-architecture",
       "title": "Kubernetes Architecture",
       "domain": "Kubernetes Fundamentals",
-      "weight": "46%",
+      "weight": "44%",
       "steps": [
         { "slug": "what-is-kubernetes", "title": "What is Kubernetes and why it exists", "type": "lesson" },
         { "slug": "control-plane-components", "title": "Control plane components", "type": "lesson" },
@@ -34,7 +34,7 @@
       "slug": "03-working-with-kubectl",
       "title": "Working with kubectl",
       "domain": "Kubernetes Fundamentals",
-      "weight": "46%",
+      "weight": "44%",
       "steps": [
         { "slug": "introduction-to-kubectl", "title": "Introduction to kubectl", "type": "lesson" },
         { "slug": "core-commands", "title": "Core commands", "type": "lesson" },
@@ -49,56 +49,69 @@
       "slug": "04-pods-and-workloads",
       "title": "Pods and Workloads",
       "domain": "Kubernetes Fundamentals",
-      "weight": "46%",
+      "weight": "44%",
       "steps": [
         { "slug": "pods", "title": "Pods", "type": "lesson" },
         { "slug": "replicasets-and-deployments", "title": "ReplicaSets and Deployments", "type": "lesson" },
         { "slug": "other-workload-types", "title": "Other workload types", "type": "lesson" },
         { "slug": "pod-lifecycle-and-probes", "title": "Pod lifecycle and probes", "type": "lesson" },
+        { "slug": "rolling-updates-and-rollbacks", "title": "Rolling updates and rollback strategies", "type": "lesson" },
         { "slug": "debug", "title": "Pods and Workloads", "type": "debug" },
         { "slug": "review", "title": "Pods and Workloads", "type": "review" },
         { "slug": "quiz", "title": "Pods and Workloads", "type": "quiz" }
       ]
     },
     {
-      "slug": "05-networking-and-services",
-      "title": "Networking and Services",
+      "slug": "05-organizing-resources",
+      "title": "Organizing Resources",
       "domain": "Kubernetes Fundamentals",
-      "weight": "46%",
+      "weight": "44%",
+      "steps": [
+        { "slug": "namespaces", "title": "Namespaces", "type": "lesson" },
+        { "slug": "labels-selectors-and-annotations", "title": "Labels, selectors, and annotations", "type": "lesson" },
+        { "slug": "configmaps", "title": "ConfigMaps", "type": "lesson" },
+        { "slug": "secrets", "title": "Secrets", "type": "lesson" },
+        { "slug": "debug", "title": "Organizing Resources", "type": "debug" },
+        { "slug": "review", "title": "Organizing Resources", "type": "review" },
+        { "slug": "quiz", "title": "Organizing Resources", "type": "quiz" }
+      ]
+    },
+    {
+      "slug": "06-networking-and-services",
+      "title": "Networking and Services",
+      "domain": "Container Orchestration",
+      "weight": "28%",
       "steps": [
         { "slug": "kubernetes-networking-model", "title": "Kubernetes networking model", "type": "lesson" },
         { "slug": "services", "title": "Services", "type": "lesson" },
-        { "slug": "ingress-and-ingress-controllers", "title": "Ingress and Ingress controllers", "type": "lesson" },
         { "slug": "dns-in-kubernetes", "title": "DNS in Kubernetes", "type": "lesson" },
+        { "slug": "ingress-and-ingress-controllers", "title": "Ingress and Ingress controllers", "type": "lesson" },
         { "slug": "network-policies", "title": "Network policies", "type": "lesson" },
-        { "slug": "service-mesh-overview", "title": "Service mesh overview", "type": "lesson" },
         { "slug": "debug", "title": "Networking and Services", "type": "debug" },
         { "slug": "review", "title": "Networking and Services", "type": "review" },
         { "slug": "quiz", "title": "Networking and Services", "type": "quiz" }
       ]
     },
     {
-      "slug": "06-configuration-and-storage",
-      "title": "Configuration and Storage",
-      "domain": "Kubernetes Fundamentals",
-      "weight": "46%",
+      "slug": "07-storage",
+      "title": "Storage",
+      "domain": "Container Orchestration",
+      "weight": "28%",
       "steps": [
-        { "slug": "namespaces", "title": "Namespaces", "type": "lesson" },
-        { "slug": "labels-selectors-annotations", "title": "Labels, selectors, and annotations", "type": "lesson" },
-        { "slug": "configmaps-and-secrets", "title": "ConfigMaps and Secrets", "type": "lesson" },
         { "slug": "volumes-and-ephemeral-storage", "title": "Volumes and ephemeral storage", "type": "lesson" },
         { "slug": "persistent-volumes", "title": "PersistentVolumes and PersistentVolumeClaims", "type": "lesson" },
         { "slug": "storageclasses", "title": "StorageClasses and dynamic provisioning", "type": "lesson" },
-        { "slug": "debug", "title": "Configuration and Storage", "type": "debug" },
-        { "slug": "review", "title": "Configuration and Storage", "type": "review" },
-        { "slug": "quiz", "title": "Configuration and Storage", "type": "quiz" }
+        { "slug": "container-storage-interface", "title": "Container Storage Interface (CSI)", "type": "lesson" },
+        { "slug": "debug", "title": "Storage", "type": "debug" },
+        { "slug": "review", "title": "Storage", "type": "review" },
+        { "slug": "quiz", "title": "Storage", "type": "quiz" }
       ]
     },
     {
-      "slug": "07-scheduling-and-autoscaling",
+      "slug": "08-scheduling-and-autoscaling",
       "title": "Scheduling and Autoscaling",
       "domain": "Kubernetes Fundamentals",
-      "weight": "46%",
+      "weight": "44%",
       "steps": [
         { "slug": "how-the-scheduler-works", "title": "How the scheduler works", "type": "lesson" },
         { "slug": "node-selectors-and-affinity", "title": "Node selectors and node affinity", "type": "lesson" },
@@ -111,27 +124,27 @@
       ]
     },
     {
-      "slug": "08-kubernetes-security",
+      "slug": "09-kubernetes-security",
       "title": "Kubernetes Security",
       "domain": "Container Orchestration",
-      "weight": "22%",
+      "weight": "28%",
       "steps": [
+        { "slug": "security-primitives-and-authentication", "title": "Security primitives and authentication", "type": "lesson" },
         { "slug": "rbac", "title": "RBAC", "type": "lesson" },
         { "slug": "serviceaccounts", "title": "ServiceAccounts", "type": "lesson" },
         { "slug": "pod-security", "title": "Pod security", "type": "lesson" },
-        { "slug": "image-security-and-admission", "title": "Image security and admission", "type": "lesson" },
+        { "slug": "image-security-and-admission", "title": "Image security and admission controllers", "type": "lesson" },
         { "slug": "debug", "title": "Kubernetes Security", "type": "debug" },
         { "slug": "review", "title": "Kubernetes Security", "type": "review" },
         { "slug": "quiz", "title": "Kubernetes Security", "type": "quiz" }
       ]
     },
     {
-      "slug": "09-kubernetes-api-and-extensibility",
+      "slug": "10-kubernetes-api-and-extensibility",
       "title": "The Kubernetes API and Extensibility",
       "domain": "Kubernetes Fundamentals",
-      "weight": "46%",
+      "weight": "44%",
       "steps": [
-        { "slug": "api-objects-and-manifests", "title": "API objects and manifests", "type": "lesson" },
         { "slug": "api-groups-and-versioning", "title": "API groups and versioning", "type": "lesson" },
         { "slug": "custom-resource-definitions", "title": "Custom Resource Definitions", "type": "lesson" },
         { "slug": "the-operator-pattern", "title": "The operator pattern", "type": "lesson" },
@@ -142,46 +155,48 @@
       ]
     },
     {
-      "slug": "10-cloud-native-architecture",
+      "slug": "11-cloud-native-architecture",
       "title": "Cloud Native Architecture",
       "domain": "Cloud Native Architecture",
-      "weight": "22%",
+      "weight": "12%",
       "steps": [
         { "slug": "twelve-factor-app", "title": "The Twelve-Factor App", "type": "lesson" },
         { "slug": "serverless-and-faas", "title": "Serverless and Functions-as-a-Service", "type": "lesson" },
-        { "slug": "the-cncf-ecosystem", "title": "The CNCF ecosystem", "type": "lesson" },
-        { "slug": "cloud-native-roles-and-personas", "title": "Cloud native roles and personas", "type": "lesson" },
+        { "slug": "service-mesh", "title": "Service mesh and microservices patterns", "type": "lesson" },
+        { "slug": "the-cncf-ecosystem", "title": "The CNCF ecosystem and open standards", "type": "lesson" },
+        { "slug": "kubernetes-community", "title": "Kubernetes community: KEPs, SIGs, and governance", "type": "lesson" },
         { "slug": "debug", "title": "Cloud Native Architecture", "type": "debug" },
         { "slug": "review", "title": "Cloud Native Architecture", "type": "review" },
         { "slug": "quiz", "title": "Cloud Native Architecture", "type": "quiz" }
       ]
     },
     {
-      "slug": "11-cloud-native-observability",
+      "slug": "12-cloud-native-observability",
       "title": "Cloud Native Observability",
-      "domain": "Cloud Native Observability",
-      "weight": "8%",
+      "domain": "Cloud Native Architecture",
+      "weight": "12%",
       "steps": [
         { "slug": "telemetry-and-three-pillars", "title": "Telemetry and the three pillars", "type": "lesson" },
         { "slug": "prometheus-and-metrics", "title": "Prometheus and metrics", "type": "lesson" },
         { "slug": "logging-in-kubernetes", "title": "Logging in Kubernetes", "type": "lesson" },
         { "slug": "distributed-tracing-and-opentelemetry", "title": "Distributed tracing and OpenTelemetry", "type": "lesson" },
-        { "slug": "cost-management", "title": "Cost management", "type": "lesson" },
+        { "slug": "slos-slas-slis-and-cost-management", "title": "SLOs, SLAs, SLIs, and cost management", "type": "lesson" },
         { "slug": "debug", "title": "Cloud Native Observability", "type": "debug" },
         { "slug": "review", "title": "Cloud Native Observability", "type": "review" },
         { "slug": "quiz", "title": "Cloud Native Observability", "type": "quiz" }
       ]
     },
     {
-      "slug": "12-cloud-native-application-delivery",
+      "slug": "13-cloud-native-application-delivery",
       "title": "Cloud Native Application Delivery",
       "domain": "Cloud Native Application Delivery",
-      "weight": "8%",
+      "weight": "16%",
       "steps": [
         { "slug": "cicd-fundamentals", "title": "CI/CD fundamentals", "type": "lesson" },
         { "slug": "gitops-principles", "title": "GitOps principles", "type": "lesson" },
         { "slug": "argocd-and-flux", "title": "GitOps tools: Argo CD and Flux", "type": "lesson" },
         { "slug": "helm-and-kustomize", "title": "Helm and Kustomize", "type": "lesson" },
+        { "slug": "debugging-application-delivery", "title": "Debugging application delivery", "type": "lesson" },
         { "slug": "debug", "title": "Cloud Native Application Delivery", "type": "debug" },
         { "slug": "review", "title": "Cloud Native Application Delivery", "type": "review" },
         { "slug": "quiz", "title": "Cloud Native Application Delivery", "type": "quiz" }
