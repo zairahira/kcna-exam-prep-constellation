@@ -38,17 +38,24 @@
     "KF-01": {
       "title": "Kubernetes cluster architecture",
       "domain": "Kubernetes Fundamentals",
-      "coveredBy": []
+      "coveredBy": [
+        "02-kubernetes-architecture/what-is-kubernetes",
+        "02-kubernetes-architecture/how-components-communicate"
+      ]
     },
     "KF-02": {
       "title": "Control plane components",
       "domain": "Kubernetes Fundamentals",
-      "coveredBy": []
+      "coveredBy": [
+        "02-kubernetes-architecture/control-plane-components"
+      ]
     },
     "KF-03": {
       "title": "Worker node components",
       "domain": "Kubernetes Fundamentals",
-      "coveredBy": []
+      "coveredBy": [
+        "02-kubernetes-architecture/worker-node-components"
+      ]
     },
     "KF-04": {
       "title": "kubectl fluency",

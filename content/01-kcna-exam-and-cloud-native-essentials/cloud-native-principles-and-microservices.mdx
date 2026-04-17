@@ -28,7 +28,7 @@ The CNCF definition highlights five key technologies and patterns:
 
 **1. Containers**
 
-Containers package an application and its dependencies into a single, portable unit. Unlike virtual machines, containers share the host operating system's kernel, which makes them lightweight and fast to start. You already have experience with containers — this course will build on that foundation and connect containers to how Kubernetes manages them.
+Containers package an application and its dependencies into a single, portable unit. Unlike virtual machines, containers share the host operating system's kernel, which makes them lightweight and fast to start. You already have experience with containers, this course will build on that foundation and connect containers to how Kubernetes manages them.
 
 **2. Microservices**
 
@@ -40,7 +40,7 @@ A service mesh is a dedicated infrastructure layer that manages communication be
 
 **4. Immutable infrastructure**
 
-In a cloud native system, you do not patch running servers. Instead, you build a new container image with the changes and replace the old one. This is the "immutable" part — once deployed, infrastructure components are not modified in place. If something needs to change, you deploy a new version. This approach eliminates configuration drift and makes rollbacks straightforward.
+In a cloud native system, you do not patch running servers. Instead, you build a new container image with the changes and replace the old one. This is the "immutable" part, once deployed, infrastructure components are not modified in place. If something needs to change, you deploy a new version. This approach eliminates configuration drift and makes rollbacks straightforward.
 
 **5. Declarative APIs**
 
@@ -48,13 +48,13 @@ Instead of telling the system *how* to reach a desired state (imperative), you d
 
 ## Why cloud native matters
 
-Cloud native is not just a set of technologies — it is an approach that enables specific operational capabilities:
+Cloud native is not just a set of technologies, it is an approach that enables specific operational capabilities:
 
-- **Loosely coupled systems** — components can be updated, scaled, or replaced independently
-- **Resilience** — the system can tolerate individual component failures without total outage
-- **Scalability** — resources can be added or removed based on demand
-- **Observability** — the system exposes enough information to understand its internal state
-- **Frequent, reliable releases** — small, independent deployments reduce the risk of each change
+- **Loosely coupled systems**: components can be updated, scaled, or replaced independently
+- **Resilience**: the system can tolerate individual component failures without total outage
+- **Scalability**: resources can be added or removed based on demand
+- **Observability**: the system exposes enough information to understand its internal state
+- **Frequent, reliable releases**: small, independent deployments reduce the risk of each change
 
 These capabilities matter because modern applications need to handle unpredictable load, recover from failures automatically, and ship updates without downtime.
 
@@ -64,37 +64,37 @@ A **monolith** is an application where all functionality is built, deployed, and
 
 **Advantages of monoliths:**
 
-- **Simpler to develop initially** — one codebase, one build, one deployment
-- **Easier to test end-to-end** — all functionality runs in a single process
-- **Straightforward debugging** — no network calls between components; stack traces are complete
-- **Lower operational overhead** — one application to monitor and manage
+- **Simpler to develop initially**: one codebase, one build, one deployment
+- **Easier to test end-to-end**: all functionality runs in a single process
+- **Straightforward debugging**: no network calls between components; stack traces are complete
+- **Lower operational overhead**: one application to monitor and manage
 
 **Disadvantages of monoliths:**
 
-- **Scaling is all-or-nothing** — you cannot scale just the part of the application that is under heavy load; you must scale the entire thing
-- **Deployments are high-risk** — a change to one feature requires redeploying the entire application
-- **Technology lock-in** — the entire application must use the same language, framework, and runtime
-- **Team coupling** — as the codebase grows, teams step on each other's work
+- **Scaling is all-or-nothing**: you cannot scale just the part of the application that is under heavy load; you must scale the entire thing
+- **Deployments are high-risk**: a change to one feature requires redeploying the entire application
+- **Technology lock-in**: the entire application must use the same language, framework, and runtime
+- **Team coupling**: as the codebase grows, teams step on each other's work
 
 ## Microservice architecture
 
-A **microservice architecture** decomposes the application into small, independently deployable services. Each service runs in its own process (typically its own container), owns its own data, and communicates with other services through APIs — usually HTTP/REST or gRPC.
+A **microservice architecture** decomposes the application into small, independently deployable services. Each service runs in its own process (typically its own container), owns its own data, and communicates with other services through APIs, usually HTTP/REST or gRPC.
 
 Using the same example: user authentication would be one service, order processing another, inventory another, and notifications another. Each can be developed, deployed, and scaled independently.
 
 **Advantages of microservices:**
 
-- **Independent scaling** — scale only the services that need more capacity
-- **Independent deployment** — ship changes to one service without touching others
-- **Technology flexibility** — each service can use the language and database best suited to its task
-- **Team autonomy** — small teams own specific services end-to-end
+- **Independent scaling**: scale only the services that need more capacity
+- **Independent deployment**: ship changes to one service without touching others
+- **Technology flexibility**: each service can use the language and database best suited to its task
+- **Team autonomy**: small teams own specific services end-to-end
 
 **Disadvantages of microservices:**
 
-- **Distributed system complexity** — network calls can fail, latency adds up, and debugging spans multiple services
-- **Data consistency challenges** — each service owns its own data, so transactions that span services require patterns like sagas or eventual consistency
-- **Operational overhead** — more services means more things to deploy, monitor, and troubleshoot
-- **Service discovery and communication** — services need to find and talk to each other reliably
+- **Distributed system complexity**: network calls can fail, latency adds up, and debugging spans multiple services
+- **Data consistency challenges**: each service owns its own data, so transactions that span services require patterns like sagas or eventual consistency
+- **Operational overhead**: more services means more things to deploy, monitor, and troubleshoot
+- **Service discovery and communication**: services need to find and talk to each other reliably
 
 ## When to use which
 
@@ -111,7 +111,7 @@ For the KCNA exam, you need to understand both architectures, their trade-offs, 
     "Cloud native is defined by five pillars: containers, microservices, service meshes, immutable infrastructure, and declarative APIs",
     "Monoliths are simpler to develop and debug, but harder to scale and deploy independently",
     "Microservices enable independent scaling and deployment, but introduce distributed system complexity",
-    "Kubernetes was designed to orchestrate microservices — many small, independent containers running across a cluster",
+    "Kubernetes was designed to orchestrate microservices, many small, independent containers running across a cluster",
   ]}
 />
 

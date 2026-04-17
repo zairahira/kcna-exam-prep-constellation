@@ -1,0 +1,139 @@
+import LessonFrame from "@/components/LessonFrame";
+import Remember from "@/components/Remember";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Worker node components"
+  domain="Kubernetes Fundamentals"
+  mustLearn={[
+    "The three components that run on every worker node",
+    "What the kubelet actually does and does not do",
+    "How kube-proxy routes traffic to pods",
+    "Where the container runtime fits in via the CRI",
+  ]}
+>
+
+## The worker node's job
+
+If the control plane is the brain, worker nodes are the muscle. Their only job is to run the pods the control plane tells them to run and keep them running.
+
+Every worker node has three components:
+
+| Component | Role |
+|---|---|
+| **kubelet** | The node agent, it talks to the control plane and manages pods on this node |
+| **kube-proxy** | The network agent, it implements the Service abstraction on this node |
+| **Container runtime** | Pulls images and runs containers (containerd, CRI-O, etc.) |
+
+Worker nodes do not make decisions about the cluster. They execute instructions delivered through the API server, and they report their local status back.
+
+## kubelet
+
+The **kubelet** is the primary Kubernetes agent that runs on every node, including control plane nodes if you treat them as schedulable. Its role is to manage the pods assigned to its node.
+
+What the kubelet does:
+
+- **Watches the API server** for pods scheduled onto this node
+- **Tells the container runtime** to pull the required images and start the containers
+- **Runs liveness, readiness, and startup probes** against the containers
+- **Reports status** (pod phase, container state, resource usage) back to the API server
+- **Mounts volumes** required by pods
+- **Enforces resource limits** using cgroups
+
+What the kubelet does *not* do:
+
+- It does not manage containers it did not start, if you run `docker run` directly, the kubelet ignores that container
+- It does not make scheduling decisions, the scheduler does that
+- It does not manage Service networking, kube-proxy does that
+
+The kubelet receives a pod spec (usually from the API server) and its whole job is "make this pod spec true on this node." It is a reconciliation loop, like every other Kubernetes component, but scoped to one node.
+
+<TerminalBlock label="checking kubelet status on a node" prompt="$" command="systemctl status kubelet">
+{`● kubelet.service - kubelet: The Kubernetes Node Agent
+     Loaded: loaded (/lib/systemd/system/kubelet.service; enabled)
+     Active: active (running) since Mon 2024-03-18 09:22:41 UTC
+   Main PID: 1842 (kubelet)
+      Tasks: 18 (limit: 4608)
+     Memory: 94.2M
+        CPU: 2h 14min
+     CGroup: /system.slice/kubelet.service
+             └─1842 /usr/bin/kubelet --config=/var/lib/kubelet/config.yaml`}
+</TerminalBlock>
+
+## kube-proxy
+
+**kube-proxy** is a network proxy that runs on every node. Its job is to implement the Kubernetes **Service** abstraction on this particular node.
+
+You will learn about Services in detail in Module 6. For now, know that a Service gives a stable virtual IP and DNS name for a group of pods, and traffic sent to that IP is routed to one of the pods behind it. kube-proxy is the component that makes this work on each node.
+
+How kube-proxy works (high level):
+
+1. It watches the API server for Service and Endpoints objects
+2. When a Service is created or changed, it updates the node's networking rules
+3. Traffic destined for a Service's virtual IP is intercepted and forwarded to an actual pod IP
+4. Load balancing across pods happens at the node's kernel level
+
+Under the hood, kube-proxy implements these rules using **iptables** (the default mode) or **IPVS** (a higher-performance mode for large clusters). You do not need to know the implementation details for the KCNA, just that kube-proxy is what makes Service IPs work on the node.
+
+## Container runtime
+
+The **container runtime** is what actually runs containers on the node. Each worker node needs one CRI-compliant runtime installed.
+
+The two runtimes you need to know (you met them in Module 1):
+
+- **containerd**: the most common runtime, default in most distributions
+- **CRI-O**: Kubernetes-specific, default in OpenShift
+
+The kubelet does not contain container-running code itself. It talks to the runtime over the **Container Runtime Interface (CRI)**, a gRPC API. This is why Kubernetes is runtime-agnostic, any runtime that implements CRI can be used.
+
+<TerminalBlock label="how a node's components connect">
+{`┌──────────────────────────────────────────────────┐
+│                   Worker node                    │
+│                                                  │
+│   ┌─────────┐     ┌───────────┐                 │
+│   │ kubelet │────▶│ container │──▶ runc ──▶ pod │
+│   │         │ CRI │  runtime  │                  │
+│   └────┬────┘     │(containerd)│                  │
+│        │          └───────────┘                 │
+│        │                                         │
+│   ┌────▼──────┐                                  │
+│   │ kube-proxy│ (programs iptables/IPVS)        │
+│   └───────────┘                                  │
+│                                                  │
+└────────────┬─────────────────────────────────────┘
+             │
+             ▼  (both kubelet and kube-proxy watch the API server)
+      ┌────────────┐
+      │ API server │
+      └────────────┘`}
+</TerminalBlock>
+
+## Putting it together: starting a pod
+
+Here is what happens on a worker node when the scheduler assigns a pod to it:
+
+1. The **kubelet** is watching the API server and sees a pod spec with this node's name
+2. The kubelet calls the **container runtime** via the CRI to pull the container image
+3. Once the image is pulled, the kubelet asks the runtime to create and start the container
+4. The container runtime (containerd) delegates to a low-level runtime (runc) to actually create the Linux container
+5. The kubelet runs any configured probes to check the container's health
+6. When the pod is healthy, the kubelet reports "Running" back to the API server
+7. **kube-proxy**, also watching the API server, updates the node's networking rules so the pod can be reached via any Service that selects it
+
+At no point does the worker node decide *what* to run. It only executes and reports.
+
+## What about the kube-proxy on the control plane node?
+
+A quick note: on many clusters, the three worker-node components (kubelet, kube-proxy, and a container runtime) also run on control plane nodes. This lets the control plane nodes run the control plane components themselves as pods, a pattern called a **self-hosted control plane**. For the KCNA, you can treat the "worker node components" as the minimum set needed to run application pods.
+
+<Remember
+  points={[
+    "Every worker node runs three components: kubelet, kube-proxy, and a container runtime",
+    "The kubelet is the node agent, it starts, stops, and reports on pods on its node",
+    "The kubelet only manages pods it started; external containers are invisible to it",
+    "kube-proxy implements Service networking on each node using iptables or IPVS",
+    "The container runtime runs containers via the CRI, containerd and CRI-O are the two you need to know",
+  ]}
+/>
+
+</LessonFrame>

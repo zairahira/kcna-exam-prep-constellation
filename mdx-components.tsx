@@ -9,20 +9,20 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {
     h2: (props) => (
       <h2
-        className="text-2xl font-bold mt-8 mb-3 tracking-tight"
+        className="text-2xl font-bold mt-12 mb-5 tracking-tight"
         {...props}
       />
     ),
     h3: (props) => (
-      <h3 className="text-xl font-bold mt-6 mb-2" {...props} />
+      <h3 className="text-xl font-bold mt-10 mb-4" {...props} />
     ),
-    p: (props) => <p className="my-4 text-fg-secondary" {...props} />,
+    p: (props) => <p className="my-5 text-fg-secondary" {...props} />,
     ul: (props) => (
-      <ul className="list-disc ml-6 my-4 text-fg-secondary space-y-1" {...props} />
+      <ul className="list-disc ml-6 my-6 text-fg-secondary space-y-2" {...props} />
     ),
     ol: (props) => (
       <ol
-        className="list-decimal ml-6 my-4 text-fg-secondary space-y-1"
+        className="list-decimal ml-6 my-6 text-fg-secondary space-y-2"
         {...props}
       />
     ),

@@ -17,7 +17,7 @@ import TerminalBlock from "@/components/TerminalBlock";
 
 You already have basic container knowledge, so this lesson is a focused review that connects what you know to what the KCNA expects. The exam assumes a solid understanding of containers as the building block of everything in Kubernetes.
 
-A **container** is an isolated process that runs on a shared operating system kernel. Unlike a virtual machine, a container does not include its own kernel or full OS — it shares the host's kernel and uses Linux features like **namespaces** (for isolation) and **cgroups** (for resource limits) to create the illusion of a separate environment.
+A **container** is an isolated process that runs on a shared operating system kernel. Unlike a virtual machine, a container does not include its own kernel or full OS, it shares the host's kernel and uses Linux features like **namespaces** (for isolation) and **cgroups** (for resource limits) to create the illusion of a separate environment.
 
 This makes containers significantly lighter than VMs:
 
@@ -29,7 +29,7 @@ This makes containers significantly lighter than VMs:
 | **Isolation** | Hardware-level (hypervisor) | Process-level (kernel features) |
 | **Density** | ~10s per host | ~100s per host |
 
-The lightweight nature of containers is what makes it practical to run hundreds of them across a cluster — which is exactly what Kubernetes does.
+The lightweight nature of containers is what makes it practical to run hundreds of them across a cluster, which is exactly what Kubernetes does.
 
 ## Container images
 
@@ -46,7 +46,7 @@ COPY . .                   # Layer: application code
 CMD ["node", "server.js"]  # Default command`}
 </TerminalBlock>
 
-Layers are **cached and shared** between images. If two images both use `node:20-alpine` as their base, that layer is stored only once on disk. This makes image distribution efficient — when you pull an updated image, only the changed layers need to be downloaded.
+Layers are **cached and shared** between images. If two images both use `node:20-alpine` as their base, that layer is stored only once on disk. This makes image distribution efficient, when you pull an updated image, only the changed layers need to be downloaded.
 
 Images are stored in **container registries**. Docker Hub is the most well-known public registry, but there are many others: GitHub Container Registry (ghcr.io), Amazon ECR, Google Artifact Registry, and private registries that organizations run internally.
 
@@ -60,9 +60,9 @@ There are two levels of container runtimes:
 
 High-level runtimes manage the full container lifecycle: pulling images, creating containers, managing storage, and networking. The two you need to know for the KCNA are:
 
-**containerd** — Originally developed as part of Docker, containerd was extracted into a standalone project and donated to the CNCF. It is now the default container runtime in most Kubernetes distributions. containerd handles image management, container execution, and storage, and it delegates the low-level work of creating the actual Linux container to a low-level runtime.
+**containerd**: Originally developed as part of Docker, containerd was extracted into a standalone project and donated to the CNCF. It is now the default container runtime in most Kubernetes distributions. containerd handles image management, container execution, and storage, and it delegates the low-level work of creating the actual Linux container to a low-level runtime.
 
-**CRI-O** — Built specifically for Kubernetes, CRI-O is a lightweight runtime that implements the Container Runtime Interface (explained below). It is the default in Red Hat OpenShift and some other distributions. CRI-O does less than containerd by design — it only does what Kubernetes needs and nothing more.
+**CRI-O**: Built specifically for Kubernetes, CRI-O is a lightweight runtime that implements the Container Runtime Interface (explained below). It is the default in Red Hat OpenShift and some other distributions. CRI-O does less than containerd by design, it only does what Kubernetes needs and nothing more.
 
 ### Low-level runtimes
 
@@ -83,7 +83,7 @@ kubelet → CRI → containerd → runc → container
 kubelet → CRI → CRI-O → runc → container
 ```
 
-This is why Kubernetes was able to **remove built-in Docker support** (called "dockershim") in version 1.24. Docker itself does not implement CRI. However, **containerd** — the runtime that Docker uses internally — does implement CRI. So when Kubernetes dropped Docker support, workloads continued to run fine because containerd was doing the actual work all along.
+This is why Kubernetes was able to **remove built-in Docker support** (called "dockershim") in version 1.24. Docker itself does not implement CRI. However, **containerd**: the runtime that Docker uses internally, does implement CRI. So when Kubernetes dropped Docker support, workloads continued to run fine because containerd was doing the actual work all along.
 
 ## Docker vs containerd: what changed?
 
@@ -101,17 +101,17 @@ node-1   Ready    control-plane   10d   v1.30.0   containerd://1.7.13
 node-2   Ready    <none>          10d   v1.30.0   containerd://1.7.13`}
 </TerminalBlock>
 
-The `CONTAINER-RUNTIME` column shows `containerd://1.7.13` — this is what modern Kubernetes clusters use. You will not see `docker://` on clusters running Kubernetes 1.24 or later.
+The `CONTAINER-RUNTIME` column shows `containerd://1.7.13`, this is what modern Kubernetes clusters use. You will not see `docker://` on clusters running Kubernetes 1.24 or later.
 
 For the exam: you do not need to know how to configure runtimes. You need to know that CRI exists, that containerd and CRI-O are the standard runtimes, and why Docker support was removed from Kubernetes.
 
 <Remember
   points={[
-    "Containers share the host kernel and use namespaces + cgroups for isolation — lighter than VMs",
+    "Containers share the host kernel and use namespaces + cgroups for isolation, lighter than VMs",
     "Container images are built in layers, cached, and stored in registries",
     "The CRI (Container Runtime Interface) is the standard API between the kubelet and the container runtime",
     "containerd and CRI-O are the two main CRI-compliant runtimes used in Kubernetes",
-    "Docker was removed from Kubernetes in v1.24 because it does not implement CRI — containerd (which Docker uses internally) does",
+    "Docker was removed from Kubernetes in v1.24 because it does not implement CRI, containerd (which Docker uses internally) does",
   ]}
 />
 

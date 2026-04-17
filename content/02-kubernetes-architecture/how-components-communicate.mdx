@@ -1,0 +1,145 @@
+import LessonFrame from "@/components/LessonFrame";
+import Remember from "@/components/Remember";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="How components communicate"
+  domain="Kubernetes Fundamentals"
+  mustLearn={[
+    "Why every component talks through the API server (the hub-and-spoke pattern)",
+    "What the watch mechanism is and why it matters",
+    "The desired-state vs actual-state reconciliation model",
+    "How this design makes Kubernetes resilient and extensible",
+  ]}
+>
+
+## The hub-and-spoke architecture
+
+In the last two lessons we introduced the control plane and worker node components. What makes them cooperate is one critical design decision: **every component talks to the API server, and only to the API server**.
+
+- The scheduler watches the API server for new pods and writes its placement decision back to the API server.
+- A controller watches the API server for changes to its resource and writes reconciliation actions back to the API server.
+- The kubelet watches the API server for pods assigned to its node and reports status back to the API server.
+- kube-proxy watches the API server for Services and Endpoints.
+
+No component talks directly to another. The scheduler does not call the kubelet. The controller manager does not call kube-proxy. Everything flows through the central hub.
+
+<TerminalBlock label="the hub-and-spoke pattern">
+{`           ┌─────────────┐
+           │  scheduler  │
+           └──────┬──────┘
+                  │
+  ┌───────────────┼───────────────┐
+  │               │               │
+  │        ┌──────▼──────┐        │
+  │        │             │        │
+┌─▼───┐    │  API server │    ┌───▼───┐
+│ctrl │◀──▶│             │◀──▶│kubelet│
+│mgr  │    │             │    └───────┘
+└─────┘    └──────▲──────┘
+                  │
+           ┌──────┴──────┐
+           │     etcd    │
+           └─────────────┘`}
+</TerminalBlock>
+
+### Why this design?
+
+The hub-and-spoke pattern gives Kubernetes three important properties:
+
+**1. Decoupling.** Components know nothing about each other. The scheduler does not need to know the kubelet's network address, authentication method, or version. It just reads and writes API objects.
+
+**2. Extensibility.** Adding a new controller to Kubernetes does not require modifying any other component, just watch the API server for the resource you care about and react. This is how **Custom Resource Definitions** (Module 10) and the **operator pattern** work: anyone can write a controller that extends the cluster's behavior without patching Kubernetes itself.
+
+**3. Single auth boundary.** Authentication and authorization only need to be enforced in one place, the API server. Every request through the API server is checked; components cannot bypass security by talking to each other directly.
+
+## The watch mechanism
+
+Components do not poll the API server on a timer. They use a feature called **watch**.
+
+When a client (kubectl, a controller, the kubelet, etc.) asks the API server to watch a resource, the API server:
+
+1. Sends the current state of all matching objects
+2. Keeps the connection open
+3. Pushes any subsequent changes (creates, updates, deletes) as streaming events
+
+This is what allows Kubernetes to react to changes in close to real time. When you `kubectl apply` a new Deployment, the Deployment controller sees the new object within milliseconds via its watch, and immediately starts reconciliation.
+
+<TerminalBlock label="watching pods in real time" prompt="$" command="kubectl get pods -w">
+{`NAME              READY   STATUS              RESTARTS   AGE
+web-5b8c-abc12    1/1     Running             0          8m
+web-5b8c-def34    0/1     ContainerCreating   0          2s
+web-5b8c-def34    1/1     Running             0          6s
+# process stays open; new events stream as they happen`}
+</TerminalBlock>
+
+The `-w` flag on `kubectl` uses the same watch API that internal components use. You are watching objects change in etcd, pushed to you through the API server, as they happen.
+
+## Desired state vs actual state
+
+This is the second core idea of Kubernetes, and the one that links every component.
+
+Every Kubernetes object has two sides:
+
+- **`spec`**: the **desired state**: what you want. Written by you.
+- **`status`**: the **actual state**: what the cluster observes. Written by controllers.
+
+You submit a Deployment that says "I want three replicas" (`spec.replicas: 3`). The ReplicaSet controller observes that only two pods are running (`status`), so it creates a third. If a pod is deleted, the observed status drops back to two, and the controller creates another. This process never stops, it is the **reconciliation loop**.
+
+```
+while true:
+  desired = read spec from API server
+  actual = read status from API server
+  if actual != desired:
+    take action to move actual toward desired
+```
+
+Every controller in Kubernetes runs some version of this loop. The pattern is so fundamental that it is the basis for custom controllers you might write in the future.
+
+### Why this matters operationally
+
+Because Kubernetes continuously reconciles, manual intervention is rarely needed:
+
+- A node crashes → the node controller notices → affected pods are rescheduled
+- Someone deletes a pod → the ReplicaSet controller recreates it
+- You update a Deployment's image → the Deployment controller rolls out new pods and removes old ones
+- A container exits unexpectedly → the kubelet restarts it
+
+You do not write any of this automation. It is the emergent behavior of many small reconciliation loops all watching the API server and acting on the same model.
+
+## A walkthrough: deleting a node
+
+To anchor all of this, trace what happens when a worker node suddenly loses power:
+
+1. The **kubelet** on that node can no longer send status updates.
+2. The **node controller** (inside the controller manager) is watching the API server for node heartbeats. After a grace period, it marks the node `NotReady`.
+3. The node controller eventually marks the pods on that node as `Terminating`, prompting their owning controllers (ReplicaSets, StatefulSets, etc.) to create replacements.
+4. The **ReplicaSet controller** sees that actual replicas dropped below desired. It creates new pod objects.
+5. The **scheduler** sees unscheduled pods and places them on healthy nodes.
+6. Other **kubelets** see new pods assigned to their nodes and start the containers.
+
+At no step did a human operator intervene. Every component acted on its own, in reaction to state changes in the API server.
+
+## Why the KCNA cares
+
+The exam will test your understanding of this architecture in several ways:
+
+- Identifying what the API server does (answer: *everything* clients touch)
+- Recognizing that components do not talk to each other directly
+- Knowing what "declarative" and "reconciliation" mean
+- Tracing the flow when a pod is created or a node fails
+
+Every later module you will study, workloads, networking, storage, security, extensibility, is built on this foundation. If you understand the hub-and-spoke, watch, and reconciliation model, everything else becomes a specialization of it.
+
+<Remember
+  points={[
+    "Every component talks to the API server, no direct component-to-component communication",
+    "The API server is the only component that talks to etcd",
+    "Components use the watch mechanism to receive changes as streams, not by polling",
+    "spec is the desired state (what you want); status is the actual state (what is observed)",
+    "Reconciliation loops continuously compare spec to status and take action to close the gap",
+    "This design makes Kubernetes decoupled, extensible, and resilient to node and component failures",
+  ]}
+/>
+
+</LessonFrame>

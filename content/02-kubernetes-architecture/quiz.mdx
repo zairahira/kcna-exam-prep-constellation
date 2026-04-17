@@ -1,0 +1,118 @@
+import LessonFrame from "@/components/LessonFrame";
+import Checkpoint from "@/components/quiz/Checkpoint";
+
+<LessonFrame
+  lessonTitle="Quiz: Kubernetes Architecture"
+  domain="Kubernetes Fundamentals"
+  mustLearn={[
+    "Validate your understanding of control plane and worker node components",
+    "Test your grasp of the hub-and-spoke communication model",
+    "Confirm your understanding of the reconciliation pattern",
+  ]}
+>
+
+<Checkpoint
+  id="m02-q01"
+  question="What is the smallest deployable unit in Kubernetes?"
+  choices={[
+    { id: "a", label: "A container" },
+    { id: "b", label: "A pod" },
+    { id: "c", label: "A node" },
+    { id: "d", label: "A deployment" },
+  ]}
+  correctId="b"
+  feedback={<p>Pods are the smallest deployable unit in Kubernetes. A pod wraps one or more containers that share a network namespace and storage. You do not deploy containers directly, you deploy pods, and pods run your containers.</p>}
+/>
+
+<Checkpoint
+  id="m02-q02"
+  question="Which control plane component is the only one that reads from and writes to etcd?"
+  choices={[
+    { id: "a", label: "kube-scheduler" },
+    { id: "b", label: "kube-controller-manager" },
+    { id: "c", label: "kube-apiserver" },
+    { id: "d", label: "kubelet" },
+  ]}
+  correctId="c"
+  feedback={<p>Only the kube-apiserver talks to etcd. Every other component, schedulers, controllers, kubelets, kube-proxy, reads and writes cluster state through the API server. This hub-and-spoke design means etcd only needs to trust one client.</p>}
+/>
+
+<Checkpoint
+  id="m02-q03"
+  question="What does the kube-scheduler do when a new pod is created?"
+  choices={[
+    { id: "a", label: "It pulls the container image and starts the container" },
+    { id: "b", label: "It picks a node for the pod, then updates the pod's record via the API server" },
+    { id: "c", label: "It calls kube-proxy on the chosen node to start the pod" },
+    { id: "d", label: "It writes directly to etcd to assign the pod to a node" },
+  ]}
+  correctId="b"
+  feedback={<p>The scheduler's job is placement, not execution. It filters nodes, scores them, picks the best fit, and records the chosen node's name in the pod object via the API server. The kubelet on that node then sees the assignment and tells the container runtime to start the pod. The scheduler never touches etcd directly, only the API server does.</p>}
+/>
+
+<Checkpoint
+  id="m02-q04"
+  question="Which three components run on every worker node?"
+  choices={[
+    { id: "a", label: "kubelet, kube-scheduler, and etcd" },
+    { id: "b", label: "kubelet, kube-proxy, and a container runtime" },
+    { id: "c", label: "kube-apiserver, kubelet, and containerd" },
+    { id: "d", label: "kube-controller-manager, kube-proxy, and kubelet" },
+  ]}
+  correctId="b"
+  feedback={<p>Every worker node runs three things: the <strong>kubelet</strong> (manages pods assigned to the node), <strong>kube-proxy</strong> (implements Service networking via iptables or IPVS), and a <strong>container runtime</strong> (containerd or CRI-O) that actually runs the containers via the CRI.</p>}
+/>
+
+<Checkpoint
+  id="m02-q05"
+  question="A Kubernetes cluster's API server is down for 30 minutes. All control plane and worker nodes are otherwise healthy. What happens to the pods already running on worker nodes?"
+  choices={[
+    { id: "a", label: "All pods are immediately terminated because the kubelet cannot talk to the control plane" },
+    { id: "b", label: "Existing pods continue running, but no new pods can be scheduled and no status updates are recorded" },
+    { id: "c", label: "Only pods on the control plane node keep running" },
+    { id: "d", label: "The container runtime stops all containers until the API server comes back" },
+  ]}
+  correctId="b"
+  feedback={<p>Kubernetes is designed to be resilient to control plane outages. The kubelet manages pods based on local state and keeps existing containers running even when it cannot reach the API server. kube-proxy's existing networking rules continue routing Service traffic. What breaks is anything requiring coordination: new scheduling, status updates, rolling updates, and new <code>kubectl</code> commands all fail until the API server is restored.</p>}
+/>
+
+<Checkpoint
+  id="m02-q06"
+  question="What does it mean that Kubernetes is a 'declarative' platform?"
+  choices={[
+    { id: "a", label: "You write imperative shell scripts that configure the cluster step-by-step" },
+    { id: "b", label: "You describe the desired end state, and controllers continuously reconcile actual state toward it" },
+    { id: "c", label: "All configuration must be declared in JSON format" },
+    { id: "d", label: "Only administrators can declare new resources in the cluster" },
+  ]}
+  correctId="b"
+  feedback={<p>Declarative means you describe <em>what</em> you want (the desired state, usually in YAML manifests), not <em>how</em> to get there. Kubernetes' controllers continuously compare desired state (from <code>spec</code>) to actual state (from <code>status</code>) and take action to close the gap. This reconciliation pattern is what makes Kubernetes self-healing.</p>}
+/>
+
+<Checkpoint
+  id="m02-q07"
+  question="Which statement best describes how Kubernetes components stay in sync with the current cluster state?"
+  choices={[
+    { id: "a", label: "Each component polls etcd every few seconds" },
+    { id: "b", label: "Each component opens a watch against the API server, which streams changes as they happen" },
+    { id: "c", label: "Components broadcast UDP messages to each other when state changes" },
+    { id: "d", label: "Components share a local database replicated by the kubelet" },
+  ]}
+  correctId="b"
+  feedback={<p>Kubernetes components use the <strong>watch</strong> mechanism. A client opens a long-lived connection to the API server, receives the current state, and then gets a stream of change events as they happen. Nothing polls etcd directly (except the API server), and components do not talk to each other, they all use the API server's watch API.</p>}
+/>
+
+<Checkpoint
+  id="m02-q08"
+  question="Why is the cloud-controller-manager a separate component from the kube-controller-manager?"
+  choices={[
+    { id: "a", label: "Because cloud providers require a commercial license" },
+    { id: "b", label: "To let cloud-provider-specific code live and release independently of core Kubernetes, keeping the core vendor-neutral" },
+    { id: "c", label: "Because kube-controller-manager cannot run on cloud instances" },
+    { id: "d", label: "To isolate it for security reasons, it runs with more permissions than other controllers" },
+  ]}
+  correctId="b"
+  feedback={<p>The cloud-controller-manager was split out so that cloud-provider code (creating load balancers, attaching cloud disks, managing routes in the cloud's network) can be developed and released independently of the core Kubernetes codebase. This keeps the Kubernetes core vendor-neutral and lets each cloud provider ship its integration on its own schedule. On bare-metal or on-prem clusters, the cloud-controller-manager is simply not present.</p>}
+/>
+
+</LessonFrame>

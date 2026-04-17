@@ -1,0 +1,105 @@
+import LessonFrame from "@/components/LessonFrame";
+import DebugPuzzle from "@/components/puzzle/DebugPuzzle";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Debug: Kubernetes Architecture"
+  domain="Kubernetes Fundamentals"
+  mustLearn={[
+    "How to identify which control plane component is responsible for a given symptom",
+    "How to interpret worker node component errors",
+    "How to reason about the hub-and-spoke communication pattern",
+  ]}
+>
+
+The following scenarios test your ability to reason about Kubernetes architecture. For each scenario, examine the artifact and choose the best explanation.
+
+<DebugPuzzle
+  id="k8s-arch-debug-01"
+  syllabusIds={["KF-02"]}
+  prompt={<p>An operator runs <code>kubectl get pods</code> and receives the error shown below. All nodes in the cluster appear to be running normally, workloads that were already deployed are still serving traffic. What is the most likely cause?</p>}
+  artifact={
+    <TerminalBlock label="kubectl output" prompt="$" command="kubectl get pods">
+{`The connection to the server 10.0.0.10:6443 was refused -
+did you specify the right host or port?`}
+    </TerminalBlock>
+  }
+  choices={[
+    { id: "a", label: "The kubelet on every worker node has crashed" },
+    { id: "b", label: "The API server (kube-apiserver) is down or unreachable" },
+    { id: "c", label: "etcd has been deleted and the cluster data is gone" },
+    { id: "d", label: "kube-proxy is misconfigured on the client machine" },
+  ]}
+  correctId="b"
+  explanation={
+    <p>
+      Port <code>6443</code> is the Kubernetes API server's default HTTPS port. "Connection refused" on that port means the API server is not accepting connections, likely crashed, stopped, or unreachable. The fact that existing workloads are still serving traffic is a critical clue: kubelets on each node continue managing their already-running pods even when the control plane is unreachable, and kube-proxy's existing rules still route Service traffic. Without the API server, though, nothing new can be scheduled, status cannot be updated, and every <code>kubectl</code> call fails. This demonstrates Kubernetes' hub-and-spoke architecture: the API server is a single point of interaction, but workloads continue running on worker nodes even when the control plane is temporarily unavailable.
+    </p>
+  }
+/>
+
+<DebugPuzzle
+  id="k8s-arch-debug-02"
+  syllabusIds={["KF-01", "KF-02"]}
+  prompt={<p>An operator takes a snapshot of etcd daily. Their cluster is destroyed by a storage failure, all nodes are lost. They rebuild the infrastructure and restore the etcd snapshot to a new control plane. Would the applications come back?</p>}
+  artifact={
+    <TerminalBlock label="what's in the etcd snapshot">
+{`# The etcd backup contains:
+- All pod manifests (and the controllers that manage them)
+- Node records for nodes that were registered at snapshot time
+- Every other Kubernetes object definition in the cluster
+
+# The etcd backup does NOT contain:
+- Container images (stored in registries)
+- Persistent volume DATA (stored on disks/cloud storage)
+- Local node state or kubelet configs`}
+    </TerminalBlock>
+  }
+  choices={[
+    { id: "a", label: "No, etcd only stores metadata, so all applications would need to be redeployed manually" },
+    { id: "b", label: "Yes, etcd holds all cluster state; restoring it recreates the entire cluster configuration, and controllers will reconcile workloads back to running" },
+    { id: "c", label: "Only if the API server is also backed up separately" },
+    { id: "d", label: "Only if the same nodes are rebuilt with identical IP addresses" },
+  ]}
+  correctId="b"
+  explanation={
+    <p>
+      etcd is the single source of truth for cluster state. A restored etcd snapshot contains every pod manifest and every other Kubernetes object in the cluster. Once the API server boots with the restored etcd data, the reconciliation loops take over: controllers see that no pods are running, the scheduler places them on new worker nodes, and kubelets pull images and start containers. The API server itself is <em>stateless</em>, it does not need a backup; its state lives in etcd. This is why backing up etcd is the single most important operational task for a Kubernetes cluster. Persistent volume <em>data</em> is a separate story, that must be backed up at the storage layer, not by etcd.
+    </p>
+  }
+/>
+
+<DebugPuzzle
+  id="k8s-arch-debug-03"
+  syllabusIds={["KF-03"]}
+  prompt={<p>Three newly created pods on <code>worker-2</code> are all stuck in the <code>Pending</code> state. Other pods on the same node were already running fine before the issue started. The kubelet logs on <code>worker-2</code> show the message below. Which component is at fault?</p>}
+  artifact={
+    <TerminalBlock label="kubelet logs on worker-2">
+{`E0412 10:14:32.881943    1842 kubelet.go:2461] "Error getting node"
+  err="node \"worker-2\" not found"
+E0412 10:14:42.882104    1842 kubelet.go:2461] "Error getting node"
+  err="node \"worker-2\" not found"
+
+$ kubectl get nodes
+NAME       STATUS     ROLES           AGE    VERSION
+cp-1       Ready      control-plane   30d    v1.30.0
+worker-1   Ready      <none>          30d    v1.30.0
+worker-2   NotReady   <none>          30d    v1.30.0
+worker-3   Ready      <none>          30d    v1.30.0`}
+    </TerminalBlock>
+  }
+  choices={[
+    { id: "a", label: "The container runtime on worker-2 has failed" },
+    { id: "b", label: "kube-proxy on worker-2 has stopped" },
+    { id: "c", label: "The kubelet on worker-2 cannot register with the API server, so the scheduler will not place new pods there, and the kubelet cannot manage them" },
+    { id: "d", label: "etcd has lost the worker-2 record" },
+  ]}
+  correctId="c"
+  explanation={
+    <p>
+      The kubelet's error "node not found" means it is trying to communicate with the API server but cannot retrieve its own node record. The node also shows as <code>NotReady</code>, which confirms the kubelet is not successfully heartbeating. Without a healthy kubelet → API server link, two things happen: (1) the scheduler will not place new pods on this node (pods stay Pending because no node is viable for them), and (2) even if pods were assigned, the kubelet could not pull the spec from the API server to start them. Already-running pods on <code>worker-2</code> keep running because the container runtime and kernel do not depend on the kubelet moment to moment, but anything requiring new coordination is broken. The fault is the kubelet's inability to talk to the API server. The container runtime is fine (old pods run); kube-proxy being down would cause networking issues, not Pending pods; etcd losing the node record is not shown in the artifact and would produce different errors in the API server logs, not the kubelet.
+    </p>
+  }
+/>
+
+</LessonFrame>

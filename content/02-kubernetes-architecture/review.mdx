@@ -1,0 +1,103 @@
+import LessonFrame from "@/components/LessonFrame";
+import Remember from "@/components/Remember";
+
+<LessonFrame
+  lessonTitle="Review: Kubernetes Architecture"
+  domain="Kubernetes Fundamentals"
+  mustLearn={[
+    "The architecture of a Kubernetes cluster and the roles of its components",
+    "How declarative configuration and reconciliation fit together",
+    "Where each concept will reappear in later modules",
+  ]}
+>
+
+## Module summary
+
+This module moved from "containers running on machines" to "containers running under Kubernetes." You now know what a cluster is made of, which components do what, and how they coordinate.
+
+## Cluster foundations
+
+A **cluster** is one or more machines Kubernetes manages as a single unit. Machines are called **nodes** and come in two roles:
+
+- **Control plane nodes** run the brain of the cluster
+- **Worker nodes** run the application pods
+
+A **pod** is the smallest deployable unit, one or more containers scheduled together, sharing a network namespace and storage. Pods, not containers, are what you deploy to Kubernetes.
+
+## Control plane components
+
+Five components make up the control plane:
+
+| Component | Role | Key fact |
+|---|---|---|
+| **kube-apiserver** | Front door; every client and component talks to it | Stateless; can run multiple instances behind a load balancer |
+| **etcd** | Cluster database | Only component that stores state; only the API server talks to it |
+| **kube-scheduler** | Decides pod placement | Filters nodes, then scores them, does not start pods |
+| **kube-controller-manager** | Runs reconciliation loops | Hosts many controllers in one process |
+| **cloud-controller-manager** | Cloud provider integration | Optional, only present on cloud clusters |
+
+The API server is the center of everything. The scheduler, controllers, kubelets, and kube-proxy all go through it. No component talks directly to another.
+
+## Worker node components
+
+Three components run on every worker node:
+
+- **kubelet**: node agent; manages pods assigned to this node by watching the API server
+- **kube-proxy**: implements Service networking on the node using iptables or IPVS
+- **Container runtime**: pulls images and runs containers via CRI (containerd or CRI-O)
+
+The kubelet is the reconciliation loop at the node level: "whatever pods the API server says belong on me, make them real and report their status."
+
+## How the pieces communicate
+
+Three ideas tie the architecture together:
+
+**1. Hub-and-spoke.** The API server is the hub; every component is a spoke. Components are decoupled, they do not know about each other, only about the API server. This is what makes Kubernetes extensible: custom controllers (Module 10) plug in by watching the API server, no core changes needed.
+
+**2. The watch mechanism.** Components do not poll. They open long-lived watches on the API server, which streams changes as they happen. This is what makes reconciliation feel instantaneous.
+
+**3. Desired vs actual state.** Every object has a `spec` (what you want) and a `status` (what is observed). Controllers continuously compare them and take action to close the gap. This is the single most important mental model in Kubernetes.
+
+## The flow when you deploy
+
+When you `kubectl apply` a manifest, here is what happens:
+
+1. `kubectl` sends the manifest to the **API server**
+2. The API server authenticates you, validates the object, and writes it to **etcd**
+3. A **controller** (e.g., the Deployment controller) sees the new object via watch and creates any dependent objects (a ReplicaSet, then pods)
+4. The **scheduler** sees unscheduled pods and picks nodes for them
+5. The **kubelet** on each chosen node sees the assignment, tells the **container runtime** (via CRI) to pull and run the containers
+6. **kube-proxy** on every node updates networking rules so the new pods are reachable through any matching Services
+7. Controllers keep watching. If anything drifts from desired state, pod crashes, node disappears, they trigger corrective action
+
+Nothing in this flow requires you to coordinate steps. You declared the goal; the components pursued it.
+
+## How this sets up the rest of the course
+
+This architecture is the scaffolding for every module that follows:
+
+- **Module 3 (kubectl)**: the client side of talking to the API server
+- **Module 4 (Pods and Workloads)**: the objects controllers manage
+- **Module 5 (Organizing Resources)**: how labels and namespaces shape what controllers see
+- **Module 6 (Networking)**: how kube-proxy, Services, and DNS actually deliver traffic
+- **Module 7 (Storage)**: how PVCs, StorageClasses, and CSI plug into the control plane
+- **Module 8 (Scheduling)**: how the scheduler's filter/score decisions can be influenced
+- **Module 9 (Security)**: how the API server authenticates and authorizes every request
+- **Module 10 (API and Extensibility)**: how to extend the API server with your own resource types and controllers
+
+You will not need to re-learn architecture. You will just keep zooming into one part of it at a time.
+
+<Remember
+  points={[
+    "Cluster = nodes; control plane nodes run the brain, worker nodes run the apps",
+    "Control plane: kube-apiserver, etcd, kube-scheduler, kube-controller-manager, cloud-controller-manager",
+    "Worker nodes: kubelet, kube-proxy, container runtime",
+    "The API server is the only component that talks to etcd, and the only component anyone talks to",
+    "Components use watch, not polling, to get updates from the API server",
+    "spec is desired state; status is actual state; controllers reconcile the gap",
+    "etcd is the one stateful component, back it up religiously",
+    "Kubernetes is extensible because any new controller just watches the API server; no core changes needed",
+  ]}
+/>
+
+</LessonFrame>

@@ -1,0 +1,116 @@
+import LessonFrame from "@/components/LessonFrame";
+import Remember from "@/components/Remember";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="What is Kubernetes and why it exists"
+  domain="Kubernetes Fundamentals"
+  mustLearn={[
+    "The specific problems Kubernetes was built to solve",
+    "The foundational concepts: cluster, node, and pod",
+    "The difference between the control plane and the data plane",
+    "Why Kubernetes is called a 'declarative' platform",
+  ]}
+>
+
+## The problem Kubernetes solves
+
+In the previous module you learned that containers package applications with their dependencies, and that container orchestration is needed once you run containers at scale. Kubernetes is the orchestrator the industry standardized on, but what does it actually do?
+
+Imagine you have fifty containerized microservices and twenty servers. Without an orchestrator, you need to answer these questions yourself:
+
+- Which container should run on which server?
+- What happens if a server dies at 3 a.m.?
+- How do I update a service to a new version without downtime?
+- How do services find each other by name, not IP?
+- How do I give an overloaded service more capacity automatically?
+
+Kubernetes answers all of these. It watches your cluster continuously, compares what is running against what you asked for, and takes action to close the gap. You tell it *what* you want; it figures out *how* to make it happen.
+
+## The foundational concepts
+
+Before we dive into components, three terms need to be concrete in your mind.
+
+### Cluster
+
+A **cluster** is a set of machines that Kubernetes treats as a single unit of compute. From the outside, you do not deploy to a specific server, you deploy to the cluster, and Kubernetes decides where things actually run.
+
+A cluster has two types of machines working together:
+
+- **Control plane nodes**: the brain; they make decisions about the cluster
+- **Worker nodes**: where your application containers actually run
+
+Small clusters may combine both roles on one machine. Production clusters separate them, often with multiple control plane nodes for high availability.
+
+### Node
+
+A **node** is a single machine in the cluster. It can be a physical server, a virtual machine, or a cloud instance. Every node runs a small set of Kubernetes components (introduced in the next two lessons) that let the control plane manage it.
+
+<TerminalBlock label="listing the nodes in a cluster" prompt="$" command="kubectl get nodes">
+{`NAME         STATUS   ROLES           AGE   VERSION
+cp-1         Ready    control-plane   12d   v1.30.0
+worker-1     Ready    <none>          12d   v1.30.0
+worker-2     Ready    <none>          12d   v1.30.0
+worker-3     Ready    <none>          12d   v1.30.0`}
+</TerminalBlock>
+
+This cluster has one control plane node and three worker nodes. The `ROLES` column marks the control plane; worker nodes show `<none>` (which is a label convention, not a bug).
+
+### Pod
+
+A **pod** is the smallest deployable unit in Kubernetes. It is a group of one or more containers that share a network namespace and storage, and that are always scheduled together on the same node.
+
+You do not deploy containers directly in Kubernetes, you deploy pods, and the pod runs your containers. Most pods contain exactly one container. Multi-container pods exist for specific patterns (like a main app plus a helper "sidecar" container) that we will cover in Module 4.
+
+For now, remember: **pods are how Kubernetes packages containers for deployment**. If containers are the ingredient, pods are the dish.
+
+## Control plane vs data plane
+
+This is one of the most important distinctions in Kubernetes, and a common KCNA question.
+
+The **control plane** is a set of components that together make decisions about the cluster. They answer questions like:
+
+- What state did the user ask for?
+- Which pod should run on which node?
+- Is the actual state matching the desired state?
+
+The control plane does not run your application pods. It runs the *system* that manages your application pods.
+
+The **data plane** is the worker nodes, which actually run the application pods. Each worker node has a few small Kubernetes components (introduced in lesson 2.3) whose only job is to carry out instructions from the control plane.
+
+You can think of it this way: the control plane is management; the data plane is the workforce.
+
+## Declarative by design
+
+Kubernetes is a **declarative** platform. This is the single most important idea underneath its design.
+
+In an *imperative* system, you tell the system what steps to execute: "SSH to server-3, pull image v2, stop the old container, start the new one." You specify the sequence.
+
+In a *declarative* system, you describe the end state: "I want three replicas of my app running image v2." Kubernetes figures out what actions will get the cluster there and executes them. If a pod dies, it starts another one. If a node goes offline, it reschedules affected pods. If you change the desired state, it converges toward the new one.
+
+This is why Kubernetes is built around **reconciliation loops**: small processes that continuously compare desired state (from your YAML manifests) to actual state (what is really running) and take corrective action. You will see this pattern everywhere in Kubernetes.
+
+## A concrete example
+
+Suppose you submit a manifest saying "I want three replicas of my web app." Here is what happens at a high level:
+
+1. You send the manifest to the control plane via `kubectl apply`.
+2. The control plane stores the desired state ("three replicas") in its database.
+3. A controller notices that zero replicas currently exist and three are wanted.
+4. The scheduler picks three worker nodes with enough capacity.
+5. Each chosen worker node pulls the image and starts the pod.
+6. The controller watches, and if one pod crashes, it tells the scheduler to place a replacement.
+
+You did not tell Kubernetes *how* to do any of this. You declared the goal, and the control plane's components, introduced in the next lesson, coordinated the work.
+
+<Remember
+  points={[
+    "A cluster is a set of machines Kubernetes treats as one unit of compute",
+    "Nodes are individual machines; they are either control plane or worker nodes",
+    "Pods are the smallest deployable unit, one or more containers scheduled together",
+    "The control plane makes decisions; the data plane (workers) runs your applications",
+    "Kubernetes is declarative: you describe the desired state, and reconciliation loops converge toward it",
+  ]}
+/>
+
+</LessonFrame>

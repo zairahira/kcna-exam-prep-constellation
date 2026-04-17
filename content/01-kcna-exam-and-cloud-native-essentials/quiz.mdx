@@ -22,7 +22,7 @@ import Checkpoint from "@/components/quiz/Checkpoint";
     { id: "d", label: "80%" },
   ]}
   correctId="c"
-  feedback={<p>The KCNA requires a score of 75% to pass — that is 45 correct answers out of 60 questions within a 90-minute time limit.</p>}
+  feedback={<p>The KCNA requires a score of 75% to pass, that is 45 correct answers out of 60 questions within a 90-minute time limit.</p>}
 />
 
 <Checkpoint
@@ -48,7 +48,7 @@ import Checkpoint from "@/components/quiz/Checkpoint";
     { id: "d", label: "Immutable infrastructure" },
   ]}
   correctId="b"
-  feedback={<p>The five pillars of cloud native are containers, microservices, service meshes, immutable infrastructure, and declarative APIs. Virtual machines are not part of the CNCF definition — cloud native specifically leverages containers as the packaging mechanism.</p>}
+  feedback={<p>The five pillars of cloud native are containers, microservices, service meshes, immutable infrastructure, and declarative APIs. Virtual machines are not part of the CNCF definition, cloud native specifically leverages containers as the packaging mechanism.</p>}
 />
 
 <Checkpoint
@@ -61,7 +61,7 @@ import Checkpoint from "@/components/quiz/Checkpoint";
     { id: "d", label: "Monoliths cannot run on Kubernetes" },
   ]}
   correctId="b"
-  feedback={<p>The core scaling limitation of monoliths is all-or-nothing scaling. You cannot scale just the overloaded component — you must scale the entire application. Microservices solve this by allowing each service to scale independently. Note that monoliths <em>can</em> be containerized and run on Kubernetes — the architecture just does not take advantage of independent scaling.</p>}
+  feedback={<p>The core scaling limitation of monoliths is all-or-nothing scaling. You cannot scale just the overloaded component, you must scale the entire application. Microservices solve this by allowing each service to scale independently. Note that monoliths <em>can</em> be containerized and run on Kubernetes, the architecture just does not take advantage of independent scaling.</p>}
 />
 
 <Checkpoint
@@ -74,7 +74,7 @@ import Checkpoint from "@/components/quiz/Checkpoint";
     { id: "d", label: "A monitoring tool for container resource usage" },
   ]}
   correctId="b"
-  feedback={<p>The CRI is a gRPC-based plugin API that defines how the kubelet (the Kubernetes node agent) communicates with container runtimes. Any runtime that implements CRI can work with Kubernetes. This is what makes Kubernetes runtime-agnostic — containerd, CRI-O, or any other compliant runtime can be swapped in.</p>}
+  feedback={<p>The CRI is a gRPC-based plugin API that defines how the kubelet (the Kubernetes node agent) communicates with container runtimes. Any runtime that implements CRI can work with Kubernetes. This is what makes Kubernetes runtime-agnostic, containerd, CRI-O, or any other compliant runtime can be swapped in.</p>}
 />
 
 <Checkpoint
@@ -83,11 +83,11 @@ import Checkpoint from "@/components/quiz/Checkpoint";
   choices={[
     { id: "a", label: "Docker containers are incompatible with Kubernetes pods" },
     { id: "b", label: "Docker images use a proprietary format that Kubernetes cannot read" },
-    { id: "c", label: "Docker does not implement the CRI — Kubernetes used a built-in shim that added unnecessary complexity" },
+    { id: "c", label: "Docker does not implement the CRI, Kubernetes used a built-in shim that added unnecessary complexity" },
     { id: "d", label: "Docker, Inc. asked Kubernetes to remove it" },
   ]}
   correctId="c"
-  feedback={<p>Docker does not implement the Container Runtime Interface. Kubernetes maintained a built-in adapter called "dockershim" to translate between the CRI and Docker's API. This added complexity and maintenance burden. Since containerd (the runtime engine inside Docker) does implement CRI and can be used directly, the shim was unnecessary. Removing it simplified Kubernetes without affecting workloads — existing images are OCI-standard and work with any compliant runtime.</p>}
+  feedback={<p>Docker does not implement the Container Runtime Interface. Kubernetes maintained a built-in adapter called "dockershim" to translate between the CRI and Docker's API. This added complexity and maintenance burden. Since containerd (the runtime engine inside Docker) does implement CRI and can be used directly, the shim was unnecessary. Removing it simplified Kubernetes without affecting workloads, existing images are OCI-standard and work with any compliant runtime.</p>}
 />
 
 <Checkpoint
@@ -100,7 +100,7 @@ import Checkpoint from "@/components/quiz/Checkpoint";
     { id: "d", label: "Kubernetes was the first container orchestrator ever created" },
   ]}
   correctId="b"
-  feedback={<p>Kubernetes won due to its extensible architecture (CRI, CNI, CSI, CRDs), vendor-neutral governance under the CNCF, universal cloud provider adoption, and a massive community ecosystem. Docker Swarm was actually <em>simpler</em> to set up — simplicity was its advantage, not Kubernetes'. Both could run containerized applications, and Kubernetes was not the first orchestrator (Mesos and Swarm predated it in some forms).</p>}
+  feedback={<p>Kubernetes won due to its extensible architecture (CRI, CNI, CSI, CRDs), vendor-neutral governance under the CNCF, universal cloud provider adoption, and a massive community ecosystem. Docker Swarm was actually <em>simpler</em> to set up, simplicity was its advantage, not Kubernetes'. Both could run containerized applications, and Kubernetes was not the first orchestrator (Mesos and Swarm predated it in some forms).</p>}
 />
 
 <Checkpoint
@@ -109,11 +109,11 @@ import Checkpoint from "@/components/quiz/Checkpoint";
   choices={[
     { id: "a", label: "All images must be rebuilt using containerd's build tool" },
     { id: "b", label: "Images must be converted from Docker format to containerd format" },
-    { id: "c", label: "No changes — container images follow the OCI standard and work with any compliant runtime" },
+    { id: "c", label: "No changes, container images follow the OCI standard and work with any compliant runtime" },
     { id: "d", label: "Images must be re-pushed to a containerd-compatible registry" },
   ]}
   correctId="c"
-  feedback={<p>Container images built with Docker follow the OCI (Open Container Initiative) standard. This means they can be pulled from any OCI-compliant registry and run by any OCI-compliant runtime, including containerd and CRI-O. No rebuilding, conversion, or re-pushing is needed. Docker is a build tool — the images it produces are standard artifacts.</p>}
+  feedback={<p>Container images built with Docker follow the OCI (Open Container Initiative) standard. This means they can be pulled from any OCI-compliant registry and run by any OCI-compliant runtime, including containerd and CRI-O. No rebuilding, conversion, or re-pushing is needed. Docker is a build tool, the images it produces are standard artifacts.</p>}
 />
 
 </LessonFrame>

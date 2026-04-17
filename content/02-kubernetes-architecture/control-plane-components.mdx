@@ -1,0 +1,157 @@
+import LessonFrame from "@/components/LessonFrame";
+import Remember from "@/components/Remember";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Control plane components"
+  domain="Kubernetes Fundamentals"
+  mustLearn={[
+    "The five control plane components and what each one does",
+    "Why etcd is the only stateful component",
+    "How the API server sits at the center of every interaction",
+    "The role of controllers and the scheduler",
+  ]}
+>
+
+## The control plane at a glance
+
+The control plane is made up of a small number of processes. On a typical cluster these run on one or more dedicated machines called **control plane nodes**. Each component has a specific job, and together they implement the decision-making brain of the cluster.
+
+There are five components you need to know for the KCNA:
+
+| Component | Role |
+|---|---|
+| **kube-apiserver** | The front door, every request to Kubernetes goes through it |
+| **etcd** | The cluster's database, stores all state |
+| **kube-scheduler** | Decides which node each new pod should run on |
+| **kube-controller-manager** | Runs the reconciliation loops for built-in resources |
+| **cloud-controller-manager** | Integrates with the cloud provider's APIs (optional) |
+
+Let's walk through each one.
+
+## kube-apiserver
+
+The **API server** is the front-end of the control plane. Every interaction with Kubernetes, whether from a user running `kubectl`, a controller, the scheduler, or even the kubelet on a worker node, goes through the API server.
+
+Its responsibilities are:
+
+- **Expose the Kubernetes REST API** (the HTTP endpoints you talk to)
+- **Authenticate** callers (who are you?)
+- **Authorize** requests (are you allowed to do this?)
+- **Validate** incoming objects (is this YAML well-formed?)
+- **Persist** accepted objects to etcd
+- **Notify** watchers when objects change
+
+Everything else in Kubernetes talks to the API server. Components do not talk directly to each other, they all go through this central hub. This design means you can update or restart any non-API component without breaking the whole system, as long as the API server keeps running.
+
+The API server is also **stateless**, meaning you can run multiple instances of it behind a load balancer for high availability. State lives in etcd, not in the API server itself.
+
+## etcd
+
+**etcd** is a distributed, consistent key-value store. It is the only place where Kubernetes actually stores the cluster's state, every pod, service, secret, config map, and node record lives in etcd.
+
+Key characteristics for the exam:
+
+- **The single source of truth**: if etcd is lost, the cluster is effectively gone
+- **Strongly consistent**: it uses the Raft consensus algorithm, so every read returns the latest committed value
+- **Only the API server talks to etcd**: no other component reads or writes it directly
+
+Because etcd is the only stateful component, **backing it up is the single most important operational task**. Losing etcd means losing the entire cluster configuration.
+
+<TerminalBlock label="etcd's role in the control plane">
+{`┌────────────────────────────────────────────┐
+│                 Control plane               │
+│                                             │
+│   kube-scheduler ──┐                        │
+│                    │                        │
+│   kube-controller-manager ──┐               │
+│                             │               │
+│   (all reads/writes)        ▼               │
+│                    ┌──────────────┐         │
+│                    │ kube-apiserver│         │
+│                    └──────┬───────┘         │
+│                           │                 │
+│                           ▼                 │
+│                    ┌──────────────┐         │
+│                    │     etcd     │         │
+│                    │ (cluster DB) │         │
+│                    └──────────────┘         │
+└────────────────────────────────────────────┘`}
+</TerminalBlock>
+
+## kube-scheduler
+
+The **scheduler** watches for pods that have been created but not yet assigned to a node, and decides which node each pod should run on.
+
+The scheduling decision is a two-phase process:
+
+1. **Filtering**: eliminate nodes that cannot run the pod (not enough CPU or memory, wrong labels, tainted, etc.)
+2. **Scoring**: rank the remaining nodes by fit and pick the best one
+
+The scheduler only makes the decision, it does not actually start the pod. It updates the pod object in etcd (via the API server) with the chosen node's name. A component on that worker node (the kubelet, covered in the next lesson) notices and does the actual work of starting the containers.
+
+You can influence scheduling with node selectors, affinity rules, and taints/tolerations, all covered in Module 8. For now, understand the scheduler as a placement engine, not an execution engine.
+
+## kube-controller-manager
+
+The **controller manager** is a single process that runs many built-in controllers. A **controller** is a reconciliation loop, it watches the state of the cluster and takes action to make the actual state match the desired state.
+
+Some of the controllers it runs:
+
+- **Node controller**: notices when a node stops reporting in and takes action
+- **ReplicaSet controller**: ensures the correct number of pod replicas exist
+- **Deployment controller**: manages rolling updates for Deployments
+- **Job controller**: runs one-shot and scheduled tasks to completion
+- **Endpoints controller**: keeps the endpoint objects that back Services up to date
+
+Each controller follows the same pattern:
+
+```
+while true:
+  observed = api.watch(resource_type)
+  desired = api.get_spec(observed)
+  if observed != desired:
+    take_action_to_reconcile()
+```
+
+Bundling all built-in controllers into one process is a deployment convenience. Each controller is still independent internally, they just share a binary.
+
+## cloud-controller-manager
+
+The **cloud controller manager** is an optional component that runs *only* on clusters deployed on a cloud provider (AWS, GCP, Azure, etc.). It holds all the cloud-provider-specific code that used to live inside kube-controller-manager.
+
+Its job is to talk to the cloud provider's APIs to:
+
+- **Provision load balancers** when a Service of type `LoadBalancer` is created
+- **Manage routes** in the cloud's virtual network
+- **Attach storage volumes** from the cloud's block storage
+- **Update node status** using the cloud provider's node metadata
+
+Separating cloud-provider code into its own component lets the core Kubernetes codebase stay vendor-neutral. Cloud providers can now ship, version, and update their integrations independently of Kubernetes releases.
+
+On a bare-metal or on-premises cluster, the cloud controller manager simply is not present.
+
+## How it all fits together
+
+When you submit a new pod manifest, here is what happens in the control plane:
+
+1. **kubectl** sends the manifest to the **API server**
+2. The API server authenticates, authorizes, validates, and writes to **etcd**
+3. The **scheduler** notices a new, unscheduled pod and picks a node, then updates etcd via the API server
+4. On the chosen worker node, the kubelet (next lesson) picks up the assignment and starts the containers
+5. A **controller** watches the pod's status and reconciles it toward the desired state over its lifetime
+
+Notice: every arrow between components passes through the API server. That is the single most important architectural pattern to remember about Kubernetes.
+
+<Remember
+  points={[
+    "The five control plane components: API server, etcd, scheduler, controller-manager, cloud-controller-manager",
+    "The API server is the only component that talks to etcd, everything else goes through the API server",
+    "etcd is the single source of truth, lose etcd and you lose the cluster; back it up",
+    "The scheduler decides placement (filter → score), but does not start containers",
+    "The controller-manager runs many reconciliation loops in one process",
+    "The cloud-controller-manager only runs on cloud-provisioned clusters; it handles provider-specific integration",
+  ]}
+/>
+
+</LessonFrame>

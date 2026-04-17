@@ -26,18 +26,18 @@ The exam is 60 multiple-choice questions in 90 minutes, with a 75% passing score
 | Cloud Native Application Delivery | 16% |
 | Cloud Native Architecture | 12% |
 
-Study proportionally — Kubernetes Fundamentals carries nearly half the exam weight.
+Study proportionally, Kubernetes Fundamentals carries nearly half the exam weight.
 
 ## Cloud native principles
 
-Cloud native is defined by five pillars: **containers**, **microservices**, **service meshes**, **immutable infrastructure**, and **declarative APIs**. These are not just buzzwords — they are the design principles that Kubernetes was built to support.
+Cloud native is defined by five pillars: **containers**, **microservices**, **service meshes**, **immutable infrastructure**, and **declarative APIs**. These are not just buzzwords, they are the design principles that Kubernetes was built to support.
 
 The key distinction is between **monolithic** and **microservice** architectures:
 
 - Monoliths are simpler to build and debug but force all-or-nothing scaling and deployment
 - Microservices allow independent scaling and deployment but introduce distributed system complexity
 
-Kubernetes was designed for the microservice model — orchestrating many small, independent containers across a cluster.
+Kubernetes was designed for the microservice model, orchestrating many small, independent containers across a cluster.
 
 ## Containers and runtimes
 
@@ -45,10 +45,10 @@ Containers are isolated processes that share the host kernel. They are built fro
 
 The **Container Runtime Interface (CRI)** is the standard API between Kubernetes and container runtimes. The two main CRI-compliant runtimes are:
 
-- **containerd** — the most common, originally part of Docker
-- **CRI-O** — built specifically for Kubernetes, the default in OpenShift
+- **containerd**: the most common, originally part of Docker
+- **CRI-O**: built specifically for Kubernetes, the default in OpenShift
 
-Docker was removed from Kubernetes in v1.24 because it does not implement CRI. This did not break existing workloads because containerd (which Docker uses internally) does implement CRI, and container images follow the **OCI standard** — they are not Docker-specific.
+Docker was removed from Kubernetes in v1.24 because it does not implement CRI. This did not break existing workloads because containerd (which Docker uses internally) does implement CRI, and container images follow the **OCI standard**: they are not Docker-specific.
 
 ## Container orchestration
 
@@ -67,23 +67,23 @@ Container orchestration solves the problems that appear when you run containers 
 
 The concepts in this module form a chain:
 
-1. **Cloud native principles** define the *approach* — build loosely coupled, resilient, scalable systems
+1. **Cloud native principles** define the *approach*, build loosely coupled, resilient, scalable systems
 2. **Microservices** are the *architectural pattern* that implements these principles
 3. **Containers** are the *packaging mechanism* that makes microservices practical
 4. **Container runtimes** are the *engines* that run containers on a host
 5. **Container orchestration** is the *system* that manages containers across a cluster
 6. **Kubernetes** is the *orchestrator* that the industry standardized on
 
-Everything that follows in this course builds on this foundation. The next module will take you inside Kubernetes itself — how its architecture works, what components make up a cluster, and how they communicate.
+Everything that follows in this course builds on this foundation. The next module will take you inside Kubernetes itself, how its architecture works, what components make up a cluster, and how they communicate.
 
 <Remember
   points={[
-    "KCNA: 60 questions, 90 minutes, 75% pass — four domains weighted 44/28/16/12",
+    "KCNA: 60 questions, 90 minutes, 75% pass, four domains weighted 44/28/16/12",
     "Cloud native = containers + microservices + service meshes + immutable infrastructure + declarative APIs",
     "Monoliths: simpler but all-or-nothing. Microservices: independent but complex",
     "CRI is the standard API between kubelet and container runtimes",
     "containerd and CRI-O are the two main CRI-compliant runtimes",
-    "Docker removed from K8s v1.24 — containerd (inside Docker) implements CRI, Docker itself does not",
+    "Docker removed from K8s v1.24, containerd (inside Docker) implements CRI, Docker itself does not",
     "OCI standard means images are portable across any compliant runtime",
     "Kubernetes won over Swarm due to extensibility, CNCF governance, cloud support, and community",
   ]}
