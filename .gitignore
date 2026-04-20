@@ -10,6 +10,7 @@ node_modules
 /.next/
 /out/
 
+
 # production
 /build
 
@@ -27,6 +28,11 @@ yarn-error.log*
 .env*.local
 .env
 
+# local Claude settings and private notes
+.claude/settings.local.json
+rough-prompt.md
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+CLAUDE.md
