@@ -1,0 +1,229 @@
+import LessonFrame from "@/components/LessonFrame";
+import Remember from "@/components/Remember";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Useful flags and output formatting"
+  domain="Kubernetes Fundamentals"
+  mustLearn={[
+    "The -o flag and the output formats it enables",
+    "How to extract single fields with -o jsonpath",
+    "How --dry-run lets you build manifests without touching the cluster",
+    "How to sort and filter kubectl output",
+  ]}
+>
+
+## Why output formatting matters
+
+The default `kubectl get` table is fine for humans, but it hides most of the information. Every kubectl `get` and `describe` result is backed by the full API object, which kubectl projects into a small set of columns. With the right flags, you can:
+
+- See more columns than the default table shows
+- Print the full object as YAML or JSON
+- Extract a single field with a query expression
+- Render custom columns
+- Sort and filter results
+
+These flags are what separate a beginner's kubectl from a working operator's kubectl.
+
+## The -o (--output) flag
+
+`-o` (short for `--output`) controls how kubectl displays results. The most useful formats:
+
+| Format | What you get |
+|---|---|
+| (default) | Compact table, curated columns |
+| `wide` | Same table plus extra columns (node, IP, etc.) |
+| `yaml` | Full object as YAML |
+| `json` | Full object as JSON |
+| `jsonpath=...` | A single field or expression |
+| `custom-columns=...` | A table you define |
+| `name` | Just object names, one per line |
+
+### -o wide
+
+Adds columns that the default output hides: the node, the pod IP, and nominated node.
+
+<TerminalBlock label="-o wide for more columns" prompt="$" command="kubectl get pods -o wide">
+{`NAME              READY   STATUS    RESTARTS   AGE   IP           NODE       NOMINATED NODE   READINESS GATES
+web-5b8c-abc12    1/1     Running   0          2d    10.244.1.7   worker-2   <none>           <none>
+api-7fc9-zzz77    1/1     Running   2          6h    10.244.2.3   worker-3   <none>           <none>`}
+</TerminalBlock>
+
+This is the quickest way to answer "which node is this pod on?" without running describe.
+
+### -o yaml and -o json
+
+Dump the full object. This is what manifests look like as Kubernetes sees them, every default filled in, plus the `status` section.
+
+<TerminalBlock label="dump a pod as YAML" prompt="$" command="kubectl get pod web-5b8c-abc12 -o yaml">
+{`apiVersion: v1
+kind: Pod
+metadata:
+  name: web-5b8c-abc12
+  namespace: default
+  labels:
+    app: web
+  uid: 4d9d2c78-...
+spec:
+  containers:
+  - name: web
+    image: nginx:1.25
+    ports:
+    - containerPort: 80
+      protocol: TCP
+  nodeName: worker-2
+  restartPolicy: Always
+status:
+  phase: Running
+  podIP: 10.244.1.7
+  conditions:
+  - type: Ready
+    status: "True"
+  containerStatuses:
+  - name: web
+    ready: true
+    restartCount: 0
+    image: nginx:1.25
+    imageID: docker.io/library/nginx@sha256:...`}
+</TerminalBlock>
+
+`-o json` prints the same object as JSON, which is what you want when piping into another tool.
+
+### -o jsonpath
+
+`jsonpath` extracts one or more fields using a JSONPath expression. It is the scripting workhorse.
+
+<TerminalBlock label="get just the pod IP" prompt="$" command='kubectl get pod web-5b8c-abc12 -o jsonpath="{.status.podIP}"'>
+{`10.244.1.7`}
+</TerminalBlock>
+
+<TerminalBlock label="all node names, one per line" prompt="$" command={`kubectl get nodes -o jsonpath="{.items[*].metadata.name}"`}>
+{`cp-1 worker-1 worker-2 worker-3`}
+</TerminalBlock>
+
+<TerminalBlock label="with a range for cleaner output" prompt="$" command={`kubectl get pods -o jsonpath='{range .items[*]}{.metadata.name}{"\\t"}{.status.podIP}{"\\n"}{end}'`}>
+{`web-5b8c-abc12    10.244.1.7
+api-7fc9-zzz77    10.244.2.3`}
+</TerminalBlock>
+
+`jsonpath` is how you get kubectl to return exactly one value you can use in a script.
+
+### -o custom-columns
+
+When you want a table but with your own columns:
+
+<TerminalBlock label="custom columns" prompt="$" command={`kubectl get pods -o custom-columns="NAME:.metadata.name,NODE:.spec.nodeName,IMAGE:.spec.containers[0].image"`}>
+{`NAME              NODE       IMAGE
+web-5b8c-abc12    worker-2   nginx:1.25
+api-7fc9-zzz77    worker-3   myregistry.local/api:v2.1.0`}
+</TerminalBlock>
+
+Handy for reports, audit checks, and quick ad-hoc views.
+
+### -o name
+
+Just the name of each object, one per line. This is the format you pipe into other commands:
+
+<TerminalBlock label="delete every pod matching a pattern" prompt="$" command="kubectl get pods -o name | xargs kubectl delete">
+{`pod "web-5b8c-abc12" deleted
+pod "web-5b8c-def34" deleted
+pod "api-7fc9-zzz77" deleted`}
+</TerminalBlock>
+
+## --dry-run: build without applying
+
+`--dry-run` tells kubectl to prepare a request but not actually change the cluster. There are two modes:
+
+- `--dry-run=client`: kubectl builds the object locally and never talks to the API server
+- `--dry-run=server`: kubectl sends the request to the API server, which validates and reports what *would* happen, but does not persist it
+
+Client-side is what you use to generate a manifest; server-side is what you use to validate one.
+
+<TerminalBlock label="generate a starter manifest" prompt="$" command="kubectl run demo --image=nginx:1.25 --dry-run=client -o yaml">
+{`apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    run: demo
+spec:
+  containers:
+  - name: demo
+    image: nginx:1.25
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+status: {}`}
+</TerminalBlock>
+
+<TerminalBlock label="validate without persisting" prompt="$" command="kubectl apply -f pod.yaml --dry-run=server">
+{`pod/demo created (server dry run)`}
+</TerminalBlock>
+
+These are huge time savers: you can prototype, catch typos, and hand-roll manifests without ever creating a real object.
+
+## Sorting results
+
+`--sort-by` takes a JSONPath expression and sorts the output by that field:
+
+<TerminalBlock label="sort pods by restart count" prompt="$" command="kubectl get pods --sort-by=.status.containerStatuses[0].restartCount">
+{`NAME              READY   STATUS    RESTARTS   AGE
+web-5b8c-abc12    1/1     Running   0          2d
+web-5b8c-def34    1/1     Running   0          2d
+api-7fc9-zzz77    1/1     Running   2          6h`}
+</TerminalBlock>
+
+<TerminalBlock label="sort nodes by creation time" prompt="$" command="kubectl get nodes --sort-by=.metadata.creationTimestamp">
+{`NAME         STATUS   ROLES           AGE    VERSION
+cp-1         Ready    control-plane   30d    v1.30.0
+worker-1     Ready    <none>          30d    v1.30.0
+worker-3     Ready    <none>          14d    v1.30.0`}
+</TerminalBlock>
+
+## Filtering by field
+
+`--field-selector` filters by server-side object fields. Only a small set of fields are indexed and supported, but the common ones are available:
+
+<TerminalBlock label="only pods that are not running" prompt="$" command="kubectl get pods --field-selector=status.phase!=Running">
+{`NAME                READY   STATUS    RESTARTS   AGE
+batch-xyz           0/1     Pending   0          45s`}
+</TerminalBlock>
+
+<TerminalBlock label="pods on a specific node" prompt="$" command="kubectl get pods --field-selector=spec.nodeName=worker-2">
+{`NAME              READY   STATUS    RESTARTS   AGE
+web-5b8c-abc12    1/1     Running   0          2d`}
+</TerminalBlock>
+
+Field selectors evaluate on the API server, so the result set is trimmed before it reaches your machine, useful on large clusters.
+
+There is another selector, `--selector` (or `-l`), for filtering by labels. Labels and selectors get a full treatment in Module 5.
+
+## Tying it together
+
+A working day-to-day kubectl toolkit looks roughly like this:
+
+<TerminalBlock label="a useful kubectl day">
+{`kubectl get pods -o wide                         # inventory with node and IP
+kubectl get pod web -o yaml                      # full definition of one object
+kubectl get pods --sort-by=.metadata.creationTimestamp
+kubectl get pods --field-selector=status.phase!=Running
+kubectl run demo --image=nginx --dry-run=client -o yaml > pod.yaml
+kubectl apply -f pod.yaml --dry-run=server       # validate manifest
+kubectl get pod web -o jsonpath='{.status.podIP}' # one value for a script`}
+</TerminalBlock>
+
+You now have enough kubectl to list, inspect, create, update, delete, debug, and script against a cluster. The remaining lessons in this module consolidate and stress-test that knowledge.
+
+<Remember
+  points={[
+    "-o wide adds columns the default table hides (node, IP)",
+    "-o yaml and -o json dump the full object, including server-filled defaults and status",
+    "-o jsonpath extracts one value or a formatted projection for scripts",
+    "-o custom-columns builds a table with your own columns; -o name prints just names for piping",
+    "--dry-run=client builds the object locally; --dry-run=server validates against the API without persisting",
+    "--sort-by and --field-selector sort and filter on server-side fields",
+    "Label-based selection (--selector / -l) is covered in depth in Module 5",
+  ]}
+/>
+
+</LessonFrame>

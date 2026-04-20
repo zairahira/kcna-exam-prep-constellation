@@ -1,0 +1,118 @@
+import LessonFrame from "@/components/LessonFrame";
+import Remember from "@/components/Remember";
+
+<LessonFrame
+  lessonTitle="Review: Working with kubectl"
+  domain="Kubernetes Fundamentals"
+  mustLearn={[
+    "A consolidated picture of kubectl and how it talks to the cluster",
+    "When to reach for imperative vs declarative commands",
+    "The output flags that unlock the rest of kubectl's power",
+  ]}
+>
+
+## Module summary
+
+This module taught you the operator's primary tool. With kubectl and a kubeconfig, you can do every task in the rest of the course.
+
+## kubectl in the architecture
+
+kubectl is a command-line HTTP client for the Kubernetes API server. It has no privileged role in the cluster, it is a client like any other. A command goes through four stages:
+
+1. Find the current cluster and user via kubeconfig
+2. Translate the command into an HTTPS request
+3. Authenticate and send the request to the API server
+4. Format the response into a table, YAML, JSON, or a field extraction
+
+If you understand this pipeline, the rest of kubectl is just flags.
+
+## kubeconfig and contexts
+
+`~/.kube/config` holds three lists and one pointer:
+
+- **clusters**: API server addresses and their CA certificates
+- **users**: credentials that kubectl will present
+- **contexts**: named (cluster + user) pairs
+- **current-context**: which context is active right now
+
+Switch clusters with `kubectl config use-context <name>`. Check the current target before running anything risky.
+
+## The core commands
+
+Seven verbs cover the vast majority of everyday work:
+
+| Verb | Use for |
+|---|---|
+| `get` | list objects in a table |
+| `describe` | detailed view of one object plus events |
+| `create` | imperative creation (fails if the object exists) |
+| `apply` | declarative create-or-update from a manifest |
+| `delete` | remove by name or manifest |
+| `logs` | container stdout/stderr |
+| `exec` | run a command inside a container |
+
+`describe` and `logs` are your first moves when something is broken; `apply` and `delete -f` are the backbone of declarative operations.
+
+## Imperative vs declarative
+
+Two styles, same API server:
+
+- **Imperative**: commands perform actions directly (`kubectl run`, `kubectl create`, `kubectl edit`). Fast for exploration, bad for reproducibility.
+- **Declarative**: manifests describe the end state; `kubectl apply -f` enforces it. Git-friendly, idempotent, and the basis for GitOps.
+
+A typical workflow scaffolds a manifest with an imperative dry-run, then commits it and applies it:
+
+```
+kubectl run demo --image=nginx --dry-run=client -o yaml > pod.yaml
+# review, edit, commit
+kubectl apply -f pod.yaml
+```
+
+The four fields every manifest has: `apiVersion`, `kind`, `metadata`, `spec`. `spec` is the desired state; `status` is what controllers observe (and is never hand-written).
+
+`kubectl explain <field.path>` prints the schema the API server actually accepts, use it instead of memorizing YAML.
+
+## Useful flags
+
+The `-o` flag opens up the rest of kubectl:
+
+| Flag | What you get |
+|---|---|
+| `-o wide` | more columns (node, pod IP) |
+| `-o yaml` / `-o json` | full object |
+| `-o jsonpath='...'` | single field for scripting |
+| `-o custom-columns=...` | custom table |
+| `-o name` | just names, one per line |
+
+Other flags you will reach for often:
+
+- `--dry-run=client -o yaml`: generate a starter manifest
+- `--dry-run=server`: validate a manifest without persisting
+- `--sort-by=<field>`: sort by any indexed field
+- `--field-selector=<expr>`: filter on the server
+
+Label-based selection (`-l` / `--selector`) is coming in Module 5, once labels are formally introduced.
+
+## How this module connects to the rest of the course
+
+Every subsequent module uses kubectl to demonstrate its concepts:
+
+- Module 4 (Pods and Workloads): you will apply pod and workload manifests
+- Module 5 (Organizing Resources): label selectors light up `-l`
+- Module 6 (Networking and Services): Services are created and inspected with kubectl
+- Module 7 onwards: everything is an API object; kubectl is how you touch it
+
+If kubectl feels natural by the end of this module, the rest of the course will feel like learning new object kinds to apply against it.
+
+<Remember
+  points={[
+    "kubectl is a client of the API server; kubeconfig tells it where and as whom",
+    "Always know your current context before running anything risky",
+    "get, describe, apply, delete, logs, exec are the seven verbs you will use constantly",
+    "Imperative is fastest to type; declarative with apply is what production uses",
+    "Every manifest has apiVersion, kind, metadata, spec; use kubectl explain to discover the rest",
+    "-o wide / -o yaml / -o jsonpath / --dry-run turn kubectl from a table printer into a tool you can script",
+  ]}
+/>
+
+</LessonFrame>

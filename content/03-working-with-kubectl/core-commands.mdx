@@ -1,0 +1,214 @@
+import LessonFrame from "@/components/LessonFrame";
+import Remember from "@/components/Remember";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Core commands"
+  domain="Kubernetes Fundamentals"
+  mustLearn={[
+    "The small set of kubectl commands you will use every day",
+    "How to inspect resources with get and describe",
+    "How to create and delete objects imperatively",
+    "How to view container logs and run commands inside a pod",
+  ]}
+>
+
+## The kubectl verbs
+
+kubectl has many subcommands, but seven of them cover almost every day-to-day task. Learning these thoroughly is more valuable than memorizing every flag:
+
+| Verb | What it does |
+|---|---|
+| `get` | list objects in short form |
+| `describe` | show a detailed view of one object, plus related events |
+| `create` | create a new object (error if it exists) |
+| `apply` | create or update an object from a manifest |
+| `delete` | remove an object |
+| `logs` | print container output |
+| `exec` | run a command inside a running container |
+
+The rest of this lesson walks through each of them with a real example.
+
+## kubectl get
+
+`get` is the workhorse command: list the objects of a given type. The resource name is always singular, plural, or a short alias (for example `pod`, `pods`, or `po`).
+
+<TerminalBlock label="listing pods in the current namespace" prompt="$" command="kubectl get pods">
+{`NAME              READY   STATUS    RESTARTS   AGE
+web-5b8c-abc12    1/1     Running   0          2d
+web-5b8c-def34    1/1     Running   0          2d
+api-7fc9-zzz77    1/1     Running   2          6h`}
+</TerminalBlock>
+
+`kubectl get` defaults to a compact table. The `READY` column shows `N/M` where M is the number of containers in the pod and N is how many are passing their readiness probe (probes come up in Module 4).
+
+You can request a single object by name:
+
+<TerminalBlock label="getting one pod" prompt="$" command="kubectl get pod web-5b8c-abc12">
+{`NAME              READY   STATUS    RESTARTS   AGE
+web-5b8c-abc12    1/1     Running   0          2d`}
+</TerminalBlock>
+
+And you can list multiple resource kinds at once:
+
+<TerminalBlock label="listing pods and nodes together" prompt="$" command="kubectl get pods,nodes">
+{`NAME                READY   STATUS    RESTARTS   AGE
+pod/web-5b8c-abc12   1/1     Running   0          2d
+pod/api-7fc9-zzz77   1/1     Running   2          6h
+
+NAME            STATUS   ROLES           AGE   VERSION
+node/cp-1       Ready    control-plane   30d   v1.30.0
+node/worker-1   Ready    <none>          30d   v1.30.0`}
+</TerminalBlock>
+
+## kubectl describe
+
+Where `get` gives you a list, `describe` gives you everything Kubernetes knows about one object, formatted for humans. This is where you look first when something is wrong.
+
+<TerminalBlock label="describing a pod" prompt="$" command="kubectl describe pod web-5b8c-abc12">
+{`Name:         web-5b8c-abc12
+Namespace:    default
+Node:         worker-2/10.0.0.12
+Start Time:   Tue, 11 Apr 2026 09:30:12 +0000
+Labels:       app=web
+Status:       Running
+IP:           10.244.1.7
+Containers:
+  web:
+    Image:         nginx:1.25
+    Port:          80/TCP
+    State:         Running
+      Started:     Tue, 11 Apr 2026 09:30:14 +0000
+    Ready:         True
+    Restart Count: 0
+Conditions:
+  Type              Status
+  Initialized       True
+  Ready             True
+  ContainersReady   True
+  PodScheduled      True
+Events:
+  Type    Reason     Age   From               Message
+  Normal  Scheduled  2d    default-scheduler  Successfully assigned default/web-5b8c-abc12 to worker-2
+  Normal  Pulling    2d    kubelet            Pulling image "nginx:1.25"
+  Normal  Pulled     2d    kubelet            Successfully pulled image
+  Normal  Created    2d    kubelet            Created container web
+  Normal  Started    2d    kubelet            Started container web`}
+</TerminalBlock>
+
+Three things make `describe` indispensable:
+
+1. It shows the pod's current conditions (ready, scheduled, containers ready)
+2. It shows the node the pod is running on and the pod's IP
+3. It prints recent events, the best first clue when a pod will not start
+
+## kubectl create
+
+`create` makes a new object from either a flag-driven command or a manifest file. It is an **imperative** command: you are telling Kubernetes "do this now."
+
+<TerminalBlock label="create a pod imperatively" prompt="$" command="kubectl run demo --image=nginx:1.25">
+{`pod/demo created`}
+</TerminalBlock>
+
+`create` fails if the object already exists. This is a safety property: it will never overwrite existing state.
+
+<TerminalBlock label="running create twice" prompt="$" command="kubectl run demo --image=nginx:1.25">
+{`Error from server (AlreadyExists): pods "demo" already exists`}
+</TerminalBlock>
+
+For anything beyond quick demos, you will prefer `apply` (next).
+
+## kubectl apply
+
+`apply` is the **declarative** counterpart to `create`. You give it a manifest (YAML or JSON) describing what you want, and Kubernetes makes the cluster match.
+
+<TerminalBlock label="apply a manifest" prompt="$" command="kubectl apply -f pod.yaml">
+{`pod/demo created`}
+</TerminalBlock>
+
+If the object already exists, `apply` will patch it to match the manifest, rather than erroring:
+
+<TerminalBlock label="apply the same manifest again" prompt="$" command="kubectl apply -f pod.yaml">
+{`pod/demo configured`}
+</TerminalBlock>
+
+`apply` is the preferred command for anything you will keep around. It is idempotent, git-friendly, and the foundation of the declarative model (lesson 3.3 goes deeper on the tradeoff).
+
+## kubectl delete
+
+`delete` removes an object by name or by manifest.
+
+<TerminalBlock label="delete a pod by name" prompt="$" command="kubectl delete pod demo">
+{`pod "demo" deleted`}
+</TerminalBlock>
+
+<TerminalBlock label="delete everything a manifest declared" prompt="$" command="kubectl delete -f pod.yaml">
+{`pod "demo" deleted`}
+</TerminalBlock>
+
+Deletion is graceful by default: Kubernetes signals the container to shut down and waits 30 seconds before forcing it. You can override this with `--grace-period=0 --force`, but only when you know the process is stuck.
+
+## kubectl logs
+
+`logs` prints the stdout and stderr of containers in a pod. It is your first stop when an application is misbehaving.
+
+<TerminalBlock label="stream the logs of a pod" prompt="$" command="kubectl logs web-5b8c-abc12">
+{`2026/04/11 09:30:14 [notice] 1#1: start worker processes
+10.244.0.3 - - [11/Apr/2026:09:31:02 +0000] "GET / HTTP/1.1" 200 612
+10.244.0.3 - - [11/Apr/2026:09:31:05 +0000] "GET /healthz HTTP/1.1" 200 2`}
+</TerminalBlock>
+
+Useful options on `logs`:
+
+- `-f` (follow): stream new log lines as they appear, like `tail -f`
+- `--previous`: get logs from the *previous* container instance after a crash
+- `-c <name>`: select a container inside a multi-container pod
+- `--tail=100`: show only the last N lines
+
+Logs are surprisingly rich because Kubernetes captures whatever your container writes to stdout/stderr, this is the Twelve-Factor App pattern and is the reason applications in containers should log to stdout rather than to files.
+
+## kubectl exec
+
+`exec` runs a command inside a running container. It is how you open a shell, inspect the filesystem, or run a diagnostic tool.
+
+<TerminalBlock label="open a shell in a container" prompt="$" command="kubectl exec -it web-5b8c-abc12 -- /bin/sh">
+{`/ # ls /etc/nginx
+conf.d
+nginx.conf
+mime.types
+/ # exit`}
+</TerminalBlock>
+
+Two flags you will always use with `exec`:
+
+- `-i` keeps stdin open (needed for an interactive shell)
+- `-t` allocates a pseudo-terminal (needed for terminal programs like `sh`, `vi`)
+
+The `--` separator tells kubectl that everything after it is the command inside the container, not a kubectl flag.
+
+## Quick reference
+
+<TerminalBlock label="the commands you will use 90% of the time">
+{`kubectl get <kind>                       # list
+kubectl get <kind> <name>                # one object
+kubectl describe <kind> <name>           # detailed view + events
+kubectl apply -f <file>                  # create or update from manifest
+kubectl delete <kind> <name>             # remove by name
+kubectl delete -f <file>                 # remove everything a manifest declared
+kubectl logs <pod> [-f] [-c <container>] # view container output
+kubectl exec -it <pod> -- <cmd>          # run a command inside the container`}
+</TerminalBlock>
+
+The next lesson takes a step back and looks at the bigger picture: when to use imperative commands like `kubectl run`, and when to use declarative manifests with `kubectl apply`.
+
+<Remember
+  points={[
+    "get lists objects; describe shows one object in detail plus events",
+    "create is imperative (fails if the object exists); apply is declarative (creates or updates)",
+    "delete removes objects gracefully by default; use -f to delete everything in a manifest",
+    "logs prints container stdout/stderr; -f streams, --previous reads the last crashed container",
+    "exec -it <pod> -- <cmd> runs a command inside the container; use /bin/sh for a shell",
+  ]}
+/>
+
+</LessonFrame>

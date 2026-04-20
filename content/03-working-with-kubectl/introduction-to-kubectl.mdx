@@ -1,0 +1,154 @@
+import LessonFrame from "@/components/LessonFrame";
+import Remember from "@/components/Remember";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Introduction to kubectl"
+  domain="Kubernetes Fundamentals"
+  mustLearn={[
+    "What kubectl is and where it sits in the architecture",
+    "How kubeconfig tells kubectl which cluster to talk to",
+    "What a context is and why multiple contexts exist",
+    "How a kubectl command turns into an API server request",
+  ]}
+>
+
+## What is kubectl
+
+In Module 2 you learned that every component in Kubernetes talks to the API server, and only to the API server. `kubectl` is no different. It is the standard command-line client for Kubernetes: a program that runs on your workstation, takes your input, and makes authenticated HTTP requests to the API server on your behalf.
+
+Everything you can do through a graphical dashboard, a CI/CD pipeline, or a custom controller, you can also do through kubectl. It is the tool you will use most during study and in real work.
+
+<TerminalBlock label="kubectl as an API client" prompt="$" command="kubectl version --short">
+{`Client Version: v1.30.0
+Server Version: v1.30.0`}
+</TerminalBlock>
+
+Two versions are reported because kubectl and the API server evolve independently. The Kubernetes version skew policy allows the client to be one minor version ahead or behind the server. Big gaps should be avoided.
+
+## Where kubectl lives in the architecture
+
+A kubectl command does three things, in order:
+
+1. Reads a configuration file to find the API server address and your credentials
+2. Builds an HTTPS request with an appropriate verb (GET, POST, PATCH, DELETE)
+3. Sends the request to the API server and formats the response for your terminal
+
+That is the whole story. kubectl does not talk to nodes, kubelets, or etcd. It talks to the API server. The API server is the hub; kubectl is just a well-behaved spoke.
+
+<TerminalBlock label="the kubectl request path">
+{`  ┌────────┐       HTTPS        ┌──────────────┐
+  │kubectl │ ─────────────────▶ │  API server  │ ─── etcd, controllers, ...
+  └────────┘   JSON/YAML req     └──────────────┘`}
+</TerminalBlock>
+
+## Installing kubectl
+
+kubectl is a single static binary. You install it the same way on every platform: download the binary for your OS, make it executable, and put it on your `PATH`.
+
+<TerminalBlock label="installing on Linux" prompt="$" command="curl -LO https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/">
+{`# downloads the latest stable kubectl and installs it`}
+</TerminalBlock>
+
+macOS users can install with `brew install kubectl`, and Windows users can use `choco install kubernetes-cli`. Cloud providers also ship kubectl as part of their CLIs (for example `gcloud`, `aws`, `az`).
+
+## The kubeconfig file
+
+kubectl needs to know three things before it can talk to a cluster:
+
+1. The API server's network address and TLS certificate authority
+2. Who you are (your user credentials: certificate, token, or cloud-specific auth)
+3. Which of the above pairings to use right now
+
+All three live in a single file called **kubeconfig**. By default, kubectl reads `~/.kube/config`. You can override this by setting the `KUBECONFIG` environment variable or passing `--kubeconfig` on the command line.
+
+<TerminalBlock label="the shape of a kubeconfig file" prompt="$" command="kubectl config view">
+{`apiVersion: v1
+kind: Config
+current-context: dev-cluster
+clusters:
+- name: dev-cluster
+  cluster:
+    server: https://10.0.0.10:6443
+    certificate-authority-data: LS0tLS1CRUdJTi...
+- name: prod-cluster
+  cluster:
+    server: https://api.prod.example.com:6443
+    certificate-authority-data: LS0tLS1CRUdJTi...
+users:
+- name: zaira@dev
+  user:
+    client-certificate-data: LS0tLS1CRUdJTi...
+    client-key-data: LS0tLS1CRUdJTi...
+contexts:
+- name: dev-cluster
+  context:
+    cluster: dev-cluster
+    user: zaira@dev
+- name: prod-cluster
+  context:
+    cluster: prod-cluster
+    user: zaira@prod`}
+</TerminalBlock>
+
+Notice the three lists: `clusters`, `users`, and `contexts`. A cluster is a server address plus a CA bundle. A user is a set of credentials. A context pairs one cluster with one user (and optionally a default namespace). kubectl always operates through a context.
+
+## Contexts: switching between clusters
+
+A **context** is a named pair of (cluster, user). It is how you express "run this next command as user X against cluster Y."
+
+Most engineers work with several clusters: a local dev cluster, a shared staging cluster, and one or more production clusters. Each gets its own context.
+
+<TerminalBlock label="listing and switching contexts" prompt="$" command="kubectl config get-contexts">
+{`CURRENT   NAME           CLUSTER        AUTHINFO        NAMESPACE
+*         dev-cluster    dev-cluster    zaira@dev
+          prod-cluster   prod-cluster   zaira@prod`}
+</TerminalBlock>
+
+<TerminalBlock label="switch to the prod context" prompt="$" command="kubectl config use-context prod-cluster">
+{`Switched to context "prod-cluster".`}
+</TerminalBlock>
+
+Switching context changes which cluster kubectl talks to for every subsequent command. A common mistake in production is running a destructive command against the wrong context. For this reason, many teams use visual prompts (such as `kube-ps1`) that show the current context in their shell.
+
+## What happens when you run a kubectl command
+
+Every kubectl command follows the same pattern. Taking `kubectl get pods` as an example:
+
+1. kubectl reads your kubeconfig, finds the current context, and extracts the API server URL and your credentials
+2. It translates `get pods` into an HTTP GET request against the pods API endpoint
+3. It authenticates the request with your credentials
+4. The API server checks your authorization, fetches the matching objects from etcd, and returns JSON
+5. kubectl parses the JSON and formats it as the familiar table you see in the terminal
+
+<TerminalBlock label="a simple kubectl call" prompt="$" command="kubectl get pods">
+{`NAME              READY   STATUS    RESTARTS   AGE
+web-5b8c-abc12    1/1     Running   0          2d
+web-5b8c-def34    1/1     Running   0          2d
+web-5b8c-ghi56    1/1     Running   0          2d`}
+</TerminalBlock>
+
+No magic. kubectl is a thin wrapper around HTTPS calls to the API server. This is why you can drive a cluster from curl, from a program, or from any HTTP client, kubectl is just the most ergonomic of them.
+
+## Why KCNA cares
+
+You do not need to memorize kubeconfig syntax for the exam, but you should understand:
+
+- kubectl is a client that talks to the API server, it is not a component of the cluster itself
+- kubeconfig holds clusters, users, and contexts
+- A context binds a cluster and a user together for the current command
+- Switching context changes which cluster kubectl targets
+
+The next lesson walks through the handful of kubectl commands you will use every day.
+
+<Remember
+  points={[
+    "kubectl is a command-line client that sends HTTPS requests to the API server",
+    "kubeconfig (default: ~/.kube/config) holds clusters, users, and contexts",
+    "A context is a named (cluster + user) pair that kubectl operates through",
+    "Switch context with kubectl config use-context; verify with get-contexts",
+    "Every kubectl command is an API server request: authenticate, authorize, fetch or change state, return a response",
+  ]}
+/>
+
+</LessonFrame>

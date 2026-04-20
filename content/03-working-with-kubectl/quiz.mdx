@@ -1,0 +1,120 @@
+import LessonFrame from "@/components/LessonFrame";
+import Checkpoint from "@/components/quiz/Checkpoint";
+
+<LessonFrame
+  lessonTitle="Quiz: Working with kubectl"
+  domain="Kubernetes Fundamentals"
+  mustLearn={[
+    "Confirm your understanding of kubectl's role as an API client",
+    "Validate your knowledge of kubeconfig, contexts, and credentials",
+    "Test your command recall for everyday kubectl verbs",
+    "Check your grasp of imperative vs declarative management",
+    "Verify that you can pick the right output flag for a task",
+  ]}
+>
+
+<Checkpoint
+  id="m03-q01"
+  question="What role does kubectl play in a Kubernetes cluster?"
+  choices={[
+    { id: "a", label: "It is a control plane component that runs on every cluster" },
+    { id: "b", label: "It is a command-line HTTP client that sends requests to the API server" },
+    { id: "c", label: "It is a daemon that runs on every worker node alongside the kubelet" },
+    { id: "d", label: "It is a replacement for the API server during outages" },
+  ]}
+  correctId="b"
+  feedback={<p>kubectl is just a client. It reads your kubeconfig, builds an HTTPS request, and sends it to the API server. It is not part of the cluster itself and has no privileged position. Anything kubectl can do, any other HTTP client (curl, a library, another tool) can do, kubectl is just the most ergonomic.</p>}
+/>
+
+<Checkpoint
+  id="m03-q02"
+  question="Where does kubectl read cluster and credential information from by default?"
+  choices={[
+    { id: "a", label: "The /etc/kubernetes/kubelet.conf file on every worker node" },
+    { id: "b", label: "A well-known IP address inside the cluster" },
+    { id: "c", label: "~/.kube/config (overridable with the KUBECONFIG environment variable)" },
+    { id: "d", label: "The current directory's .kubeconfig.yaml file" },
+  ]}
+  correctId="c"
+  feedback={<p>kubectl reads <code>~/.kube/config</code> by default. You can override this with the <code>KUBECONFIG</code> environment variable or with the <code>--kubeconfig</code> flag. The file holds <code>clusters</code>, <code>users</code>, and <code>contexts</code>, plus a <code>current-context</code> pointer that selects which cluster and user pair kubectl uses.</p>}
+/>
+
+<Checkpoint
+  id="m03-q03"
+  question="What is a kubectl context?"
+  choices={[
+    { id: "a", label: "A saved kubectl command history" },
+    { id: "b", label: "A named (cluster, user) pair, optionally with a default namespace" },
+    { id: "c", label: "The output format kubectl uses by default" },
+    { id: "d", label: "The API version kubectl negotiates with the server" },
+  ]}
+  correctId="b"
+  feedback={<p>A context is a named combination of one cluster and one user (with an optional default namespace). kubectl always operates through a context. You switch between them with <code>kubectl config use-context &lt;name&gt;</code>, which changes which cluster every subsequent command targets.</p>}
+/>
+
+<Checkpoint
+  id="m03-q04"
+  question="Which kubectl command would you use first to investigate why a pod is failing to start?"
+  choices={[
+    { id: "a", label: "kubectl get pod <name>" },
+    { id: "b", label: "kubectl describe pod <name>" },
+    { id: "c", label: "kubectl edit pod <name>" },
+    { id: "d", label: "kubectl create pod <name>" },
+  ]}
+  correctId="b"
+  feedback={<p><code>kubectl describe</code> shows the pod's current conditions, the node it was scheduled to, its containers, and, crucially, the recent <em>events</em> for the object. Events are the first clue when a pod fails to schedule, fails to pull its image, or crashes on startup. <code>get</code> gives only a summary row, <code>edit</code> opens the object for modification, and <code>create</code> would not apply to an existing pod.</p>}
+/>
+
+<Checkpoint
+  id="m03-q05"
+  question="What is the key difference between kubectl create and kubectl apply?"
+  choices={[
+    { id: "a", label: "create works on pods only; apply works on any resource" },
+    { id: "b", label: "create is faster; apply is slower because it writes to etcd twice" },
+    { id: "c", label: "create fails if the object already exists; apply creates or updates to match the manifest" },
+    { id: "d", label: "create is a cluster-admin command; apply is a read-only command" },
+  ]}
+  correctId="c"
+  feedback={<p><code>create</code> is imperative: it produces a new object and errors with <code>AlreadyExists</code> if one with the same name already exists. <code>apply</code> is declarative: it diffs the manifest against the cluster and makes the cluster match, creating the object if it does not exist and patching it if it does. <code>apply</code> is the command that underpins manifest-driven workflows.</p>}
+/>
+
+<Checkpoint
+  id="m03-q06"
+  question="Which four top-level fields are present on essentially every Kubernetes manifest?"
+  choices={[
+    { id: "a", label: "apiVersion, kind, metadata, spec" },
+    { id: "b", label: "group, version, resource, selector" },
+    { id: "c", label: "name, namespace, labels, annotations" },
+    { id: "d", label: "cluster, user, context, namespace" },
+  ]}
+  correctId="a"
+  feedback={<p>Every manifest has <code>apiVersion</code> (which API group and version), <code>kind</code> (what type of object), <code>metadata</code> (name, namespace, labels, annotations), and <code>spec</code> (desired state). Controllers later populate a <code>status</code> field that reflects what is actually observed. You never write <code>status</code> yourself.</p>}
+/>
+
+<Checkpoint
+  id="m03-q07"
+  question="You need to scaffold a YAML manifest for a pod without creating the pod in the cluster. Which command does this cleanly?"
+  choices={[
+    { id: "a", label: "kubectl apply -f pod.yaml" },
+    { id: "b", label: "kubectl create pod demo --image=nginx:1.25" },
+    { id: "c", label: "kubectl run demo --image=nginx:1.25 --dry-run=client -o yaml" },
+    { id: "d", label: "kubectl describe pod demo -o yaml" },
+  ]}
+  correctId="c"
+  feedback={<p><code>--dry-run=client</code> tells kubectl to build the object locally and not send it to the API server. Combined with <code>-o yaml</code>, it prints a valid starter manifest you can pipe into a file and edit. This is the standard way to get a valid, schema-correct YAML without having to write it from scratch.</p>}
+/>
+
+<Checkpoint
+  id="m03-q08"
+  question="You need to extract exactly the IP address of a single pod for use in a shell script. Which command produces the cleanest output?"
+  choices={[
+    { id: "a", label: "kubectl get pod web -o wide | awk '{print $6}'" },
+    { id: "b", label: "kubectl get pod web -o yaml | grep podIP" },
+    { id: "c", label: "kubectl get pod web -o jsonpath='{.status.podIP}'" },
+    { id: "d", label: "kubectl describe pod web | grep IP" },
+  ]}
+  correctId="c"
+  feedback={<p><code>-o jsonpath</code> extracts exactly one field from the object's JSON representation. It prints nothing else, no headers, no labels, no extra whitespace, which is exactly what you want in a script. The awk and grep approaches are fragile: table column positions and YAML indentation both change as Kubernetes evolves, and they can easily be broken by future releases or unexpected values.</p>}
+/>
+
+</LessonFrame>

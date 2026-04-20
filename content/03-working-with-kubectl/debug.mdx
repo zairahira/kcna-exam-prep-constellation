@@ -1,0 +1,113 @@
+import LessonFrame from "@/components/LessonFrame";
+import DebugPuzzle from "@/components/puzzle/DebugPuzzle";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Debug: Working with kubectl"
+  domain="Kubernetes Fundamentals"
+  mustLearn={[
+    "How to interpret common kubectl errors",
+    "How to reason about imperative vs declarative side effects",
+    "How to pick the right flag for the information you need",
+  ]}
+>
+
+The following scenarios test your ability to reason about kubectl commands, output, and the imperative vs declarative model. Study the artifact, then choose the best explanation.
+
+<DebugPuzzle
+  id="kubectl-debug-01"
+  syllabusIds={["KF-04"]}
+  prompt={<p>An operator just joined a team. They run the command below against what they believe is a dev cluster, but production pods appear in the output. What is the most likely cause?</p>}
+  artifact={
+    <TerminalBlock label="kubectl output" prompt="$" command="kubectl get pods">
+{`NAME                          READY   STATUS    RESTARTS   AGE
+checkout-prod-a1b2c3           1/1     Running   0          14d
+payments-prod-d4e5f6           1/1     Running   0          14d
+orders-prod-g7h8i9             1/1     Running   0          14d
+
+$ kubectl config current-context
+prod-cluster`}
+    </TerminalBlock>
+  }
+  choices={[
+    { id: "a", label: "The API server is returning incorrect data" },
+    { id: "b", label: "kubectl is still using the previous user's session" },
+    { id: "c", label: "The current context in their kubeconfig points to the production cluster, not dev" },
+    { id: "d", label: "There is no dev cluster; only prod exists" },
+  ]}
+  correctId="c"
+  explanation={
+    <p>
+      <code>kubectl config current-context</code> explicitly shows that the active context is <code>prod-cluster</code>. kubectl operates through whatever context is current in kubeconfig, so every command targets that cluster until the operator switches with <code>kubectl config use-context dev-cluster</code>. This is a common (and dangerous) mistake, which is why many teams use shell prompts that display the active context. The API server is returning correct data for the cluster it was asked about; kubectl has no notion of a "session"; and the absence of a dev cluster cannot be inferred from this output.
+    </p>
+  }
+/>
+
+<DebugPuzzle
+  id="kubectl-debug-02"
+  syllabusIds={["KF-05"]}
+  prompt={<p>An operator created a pod imperatively, then later discovered the image tag was wrong and edited a local manifest file to fix it. They ran <code>kubectl apply -f pod.yaml</code> and got the output below. What does the output tell them?</p>}
+  artifact={
+    <TerminalBlock label="kubectl apply output">
+{`$ kubectl run demo --image=nginx:1.24
+pod/demo created
+
+$ cat pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+spec:
+  containers:
+  - name: demo
+    image: nginx:1.25
+
+$ kubectl apply -f pod.yaml
+Warning: resource pods/demo is missing the
+kubectl.kubernetes.io/last-applied-configuration annotation
+which is required by kubectl apply. kubectl apply should
+only be used on resources created declaratively...
+pod/demo configured`}
+    </TerminalBlock>
+  }
+  choices={[
+    { id: "a", label: "The apply failed because the pod already existed" },
+    { id: "b", label: "apply succeeded, but kubectl warned that the object was originally created imperatively, so merging is done on a best-effort basis" },
+    { id: "c", label: "The image was not actually updated" },
+    { id: "d", label: "The apply was rejected because pod.yaml is missing required fields" },
+  ]}
+  correctId="b"
+  explanation={
+    <p>
+      The final line, <code>pod/demo configured</code>, confirms that <code>apply</code> did make the change. However, <code>apply</code> relies on an annotation called <code>last-applied-configuration</code> to do three-way merges between what you declared before, what you are declaring now, and what is currently running. Imperative <code>kubectl run</code> does not set that annotation, so the warning is telling the operator that mixing styles on the same object is risky: the merge is best-effort, and fields the imperative command set (and the manifest does not mention) may or may not be cleaned up correctly. The fix is to either always use <code>apply</code>, or to rewrite the object with <code>kubectl apply --force</code> / <code>kubectl replace</code> to reset the annotation. This is a good illustration of why teams pick one style and stick with it per object.
+    </p>
+  }
+/>
+
+<DebugPuzzle
+  id="kubectl-debug-03"
+  syllabusIds={["KF-04"]}
+  prompt={<p>An operator wants to write a shell script that picks a pod's IP address and pings it. They try the command below, but the output is not what they need. Which flag should they use instead?</p>}
+  artifact={
+    <TerminalBlock label="attempt to extract the pod IP" prompt="$" command="kubectl get pod web-5b8c-abc12 -o wide">
+{`NAME              READY   STATUS    RESTARTS   AGE   IP           NODE       NOMINATED NODE   READINESS GATES
+web-5b8c-abc12    1/1     Running   0          2d    10.244.1.7   worker-2   <none>           <none>
+
+# they need just "10.244.1.7" as output, nothing else`}
+    </TerminalBlock>
+  }
+  choices={[
+    { id: "a", label: "Use -o yaml and grep the podIP field" },
+    { id: "b", label: "Pipe -o wide through awk to extract the 6th column" },
+    { id: "c", label: "Use -o jsonpath='{.status.podIP}' to print just the IP" },
+    { id: "d", label: "Use --field-selector=status.podIP to return only the IP" },
+  ]}
+  correctId="c"
+  explanation={
+    <p>
+      <code>-o jsonpath</code> is designed for exactly this case: extract a single value from the full object and print nothing else. <code>kubectl get pod web-5b8c-abc12 -o jsonpath='&#123;.status.podIP&#125;'</code> returns <code>10.244.1.7</code> with no headers, no spacing, no extra columns, clean for scripting. Grepping YAML and awking a table both work in practice, but they are fragile: YAML indentation changes and table columns shift as Kubernetes evolves. <code>--field-selector</code> filters which objects are returned, it does not project specific fields of those objects.
+    </p>
+  }
+/>
+
+</LessonFrame>

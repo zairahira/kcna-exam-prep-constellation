@@ -60,12 +60,18 @@
     "KF-04": {
       "title": "kubectl fluency",
       "domain": "Kubernetes Fundamentals",
-      "coveredBy": []
+      "coveredBy": [
+        "03-working-with-kubectl/introduction-to-kubectl",
+        "03-working-with-kubectl/core-commands",
+        "03-working-with-kubectl/useful-flags-and-output"
+      ]
     },
     "KF-05": {
       "title": "Imperative vs declarative management",
       "domain": "Kubernetes Fundamentals",
-      "coveredBy": []
+      "coveredBy": [
+        "03-working-with-kubectl/imperative-vs-declarative"
+      ]
     },
     "KF-06": {
       "title": "Pods and pod manifests",

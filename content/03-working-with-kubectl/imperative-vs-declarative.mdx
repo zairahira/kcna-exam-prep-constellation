@@ -1,0 +1,190 @@
+import LessonFrame from "@/components/LessonFrame";
+import Remember from "@/components/Remember";
+import TerminalBlock from "@/components/TerminalBlock";
+
+<LessonFrame
+  lessonTitle="Imperative vs declarative"
+  domain="Kubernetes Fundamentals"
+  mustLearn={[
+    "The two ways to drive Kubernetes: commands vs manifests",
+    "The anatomy of a YAML manifest (apiVersion, kind, metadata, spec)",
+    "How kubectl apply and kubectl explain support the declarative workflow",
+    "When each style is appropriate, and why teams default to declarative",
+  ]}
+>
+
+## Two ways to tell Kubernetes what you want
+
+In Module 2 you learned that Kubernetes is a declarative system: you describe the desired state, and reconciliation loops work to close the gap. kubectl, however, exposes both styles:
+
+- **Imperative**: you run a command that performs a specific action ("create this pod")
+- **Declarative**: you write a manifest describing the end state, then ask Kubernetes to make the cluster match it
+
+Both styles go through the same API server and produce the same objects. The difference is in who holds the description of what *should* exist.
+
+## The imperative style
+
+Imperative commands are fast and convenient for one-off tasks. The command is the instruction:
+
+<TerminalBlock label="imperative: create a pod with one command" prompt="$" command="kubectl run demo --image=nginx:1.25 --port=80">
+{`pod/demo created`}
+</TerminalBlock>
+
+You can also use `kubectl create` for more specific kinds, or `kubectl edit` to modify an object live:
+
+<TerminalBlock label="imperative: edit a running pod" prompt="$" command="kubectl edit pod demo">
+{`# opens the pod's definition in your $EDITOR, saves back on exit`}
+</TerminalBlock>
+
+These commands are expedient but have a cost: **there is no record of what you did**. If someone asks "what is running in the cluster and why?", the answer is hidden inside a shell history or a human's memory. Rebuilding the cluster from scratch means replaying every command, in the right order, without typos.
+
+## The declarative style
+
+Declarative management centers on **manifests**: files (usually YAML) that describe objects. You store them in version control, review them like code, and ask Kubernetes to enforce them.
+
+<TerminalBlock label="declarative: a pod manifest">
+{`apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  labels:
+    app: demo
+spec:
+  containers:
+  - name: web
+    image: nginx:1.25
+    ports:
+    - containerPort: 80`}
+</TerminalBlock>
+
+Save this as `pod.yaml` and ask Kubernetes to enforce it:
+
+<TerminalBlock label="create from a manifest" prompt="$" command="kubectl apply -f pod.yaml">
+{`pod/demo created`}
+</TerminalBlock>
+
+Change the manifest (for example bump the image tag) and apply again:
+
+<TerminalBlock label="update by editing and reapplying" prompt="$" command="kubectl apply -f pod.yaml">
+{`pod/demo configured`}
+</TerminalBlock>
+
+Now the pod's current state is described by a file you can check in, diff, review, and replay on another cluster. The command history no longer holds the source of truth, the manifest does.
+
+## Anatomy of a manifest
+
+Every Kubernetes manifest, regardless of kind, has the same four top-level fields:
+
+| Field | Purpose |
+|---|---|
+| `apiVersion` | Which API group and version the object belongs to |
+| `kind` | The type of object (Pod, ConfigMap, etc.) |
+| `metadata` | Name, labels, annotations, namespace |
+| `spec` | The desired state for this object |
+
+Let's break each one down using the pod manifest above.
+
+### apiVersion
+
+`apiVersion: v1` tells Kubernetes this is a core object (no group prefix) at stable version `v1`. Other kinds live in named API groups and use a slash, for example `apiVersion: apps/v1`. Module 10 goes deeper on API groups.
+
+### kind
+
+`kind: Pod` says what type of object this manifest describes. The API server uses kind to pick the right schema, validate the rest of the document, and route the request to the right controller.
+
+### metadata
+
+`metadata` holds identifying information:
+
+- `name`: unique within the namespace
+- `namespace`: which namespace the object belongs to (omitted here, so it defaults to `default`)
+- `labels`: key/value tags used to group and select objects (labels get a deeper treatment in Module 5)
+- `annotations`: free-form key/value notes, usually for tooling
+
+### spec
+
+`spec` is the desired state. Every kind has its own schema under `spec`; for a Pod it describes containers, volumes, restart policy, and so on. This is what reconciliation loops compare against reality.
+
+You may also see a `status` section if you `get -o yaml` an existing object. That is written by controllers and reflects what is currently observed, you never write to `status` yourself.
+
+## kubectl explain: the built-in reference
+
+kubectl ships with every field definition the API server accepts. You do not need to memorize schemas, you can query them from the command line.
+
+<TerminalBlock label="explain a field path" prompt="$" command="kubectl explain pod.spec.containers">
+{`KIND:     Pod
+VERSION:  v1
+RESOURCE: containers <[]Object>
+
+DESCRIPTION:
+     List of containers belonging to the pod...
+
+FIELDS:
+   args         <[]string>
+   command      <[]string>
+   env          <[]Object>
+   image        <string>
+   imagePullPolicy <string>
+   livenessProbe <Object>
+   name         <string> -required-
+   ports        <[]Object>
+   readinessProbe <Object>
+   ...`}
+</TerminalBlock>
+
+Drill deeper into any field:
+
+<TerminalBlock label="explain a nested field" prompt="$" command="kubectl explain pod.spec.containers.ports">
+{`KIND:     Pod
+VERSION:  v1
+RESOURCE: ports <[]Object>
+
+FIELDS:
+   containerPort <integer> -required-
+     Number of port to expose on the pod's IP address.
+   name          <string>
+   protocol      <string>
+   hostPort      <integer>`}
+</TerminalBlock>
+
+Use `--recursive` to dump every field under a path at once. `kubectl explain` is the definitive source because it reads directly from the API server's schema, which means it reflects the exact version your cluster understands.
+
+## Imperative, declarative, or imperative-then-declarative?
+
+In practice, teams use both, at different stages:
+
+- **Exploring** a new object type: imperative, because it is fastest
+- **Handing work between people or environments**: declarative, because manifests travel
+- **Changing production**: declarative, because manifests are reviewable, diffable, and replayable
+- **Responding to an incident**: either, pick the fastest path to safety, then update manifests to reflect reality
+
+A common pattern is to scaffold a manifest with a dry-run, then hand-edit it:
+
+<TerminalBlock label="scaffold a manifest from an imperative command" prompt="$" command="kubectl run demo --image=nginx:1.25 --dry-run=client -o yaml > pod.yaml">
+{`# pod.yaml now contains a valid manifest you can edit and apply`}
+</TerminalBlock>
+
+`--dry-run=client` tells kubectl to build the object locally and **not** send it to the API server. `-o yaml` prints it as a manifest. Together, they are the fastest way to get a starting manifest that will actually apply. The next lesson covers these output flags in more detail.
+
+## Why the declarative model matters
+
+Declarative management is the foundation of GitOps (Module 13), the operator pattern (Module 10), and essentially every serious production Kubernetes setup. Three properties make it powerful:
+
+1. **The cluster's desired state lives in git**, not in a human's head
+2. **Applying the same manifest twice is safe**, it either creates or patches
+3. **Rollback is the same command, pointed at the previous version of the manifest**
+
+If you remember one thing from this lesson, let it be: **manifests are the contract, kubectl apply is the enforcement**.
+
+<Remember
+  points={[
+    "Imperative: you run a command that performs the action now (kubectl run, kubectl create, kubectl edit)",
+    "Declarative: you write a manifest describing the end state and apply it (kubectl apply -f)",
+    "Every manifest has four top-level fields: apiVersion, kind, metadata, spec",
+    "spec is what you want; status is what controllers observe (you never write status)",
+    "kubectl explain prints the live schema from the API server for any field path",
+    "Declarative is the production default: manifests live in git, are diffable, and make rollback trivial",
+  ]}
+/>
+
+</LessonFrame>
